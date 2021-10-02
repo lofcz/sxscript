@@ -1,6 +1,8 @@
+using SxScript.SxStatements;
+
 namespace SxScript;
 
-public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>
+public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatement.ISxStatementVisitor<object>
 {
     public object? Visit(SxBinaryExpression expr)
     {
@@ -12,7 +14,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>
             return left.ToString() + right.ToString();
         }
 
-        object? val = PerformArithmeticOperation(left, right, expr.Operator.Type);
+        object? val = PerformArithmeticOperation(left, right, expr.Operator);
         return val;
     }
 
@@ -48,9 +50,12 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>
         return null;
     }
 
-    public object? PerformArithmeticOperation(object left, object right, SxTokenTypes op)
+    public object? PerformArithmeticOperation(object left, object right, SxToken op)
     {
-        return op switch
+        AssertTypeOf(left, "Levá strana výrazu musí být int/double/bool", op, typeof(int), typeof(double), typeof(bool));
+        AssertTypeOf(right, "Pravá strana výrazu musí být int/double/bool", op,typeof(int), typeof(double), typeof(bool));
+        
+        return op.Type switch
         {
             SxTokenTypes.Plus => (object) ((dynamic) left + (dynamic) right),
             SxTokenTypes.Minus => (object) ((dynamic) left - (dynamic) right),
@@ -65,6 +70,21 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>
             _ => null
         };
     }
+
+    public bool AssertTypeOf(object obj, string errMsg, SxToken closestToken, params Type[] types)
+    {
+        Type objT = obj.GetType();
+        
+        for (int i = 0; i < types.Length; i++)
+        {
+            if (objT == types[i])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    } 
 
     public bool ObjectIsEqual(object? left, object? right)
     {
@@ -117,9 +137,32 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>
 
         return Evaluate(expr.CaseTrue);
     }
+    
+    public object? Evaluate(List<SxStatement> statements)
+    {
+        foreach (SxStatement statement in statements)
+        {
+            object statementResult = statement.Accept(this);   
+        }
+
+        return null;
+    }
 
     public object Evaluate(SxExpression expression)
     {
         return expression.Accept(this);
+    }
+
+    public object Visit(SxExpressionStatement expr)
+    {
+        Evaluate(expr.Expr);
+        return null!;
+    }
+
+    public object Visit(SxPrintStatement expr)
+    {
+        object val = Evaluate(expr.Expr);
+        Console.WriteLine(val);
+        return null!;
     }
 }

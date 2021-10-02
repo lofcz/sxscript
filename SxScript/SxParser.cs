@@ -1,3 +1,5 @@
+using SxScript.SxStatements;
+
 namespace SxScript;
 
 public class SxParser<T>
@@ -10,14 +12,25 @@ public class SxParser<T>
         Tokens = tokens;
     }
 
-    public SxExpression Parse()
+    public List<SxStatement> Parse()
     {
-        return Expression();
+        List<SxStatement> statements = new List<SxStatement>();
+        while (!IsAtEnd())
+        {
+            statements.Add(Statement());
+        }
+
+        return statements;
     }
     
     /*
-        expression     → ternary ;
-        ternary        → equality ? expression : expression
+        expression     → statement * EOF ;
+        statement      → exprStmt
+                         | printStmt ;
+        printStmt      → "print" expression ";"? ;
+        exprStmt       → expression ";"?      
+        expression     → ternary ";" ;      
+        ternary        → equality "?" expression ":" expression
                          | equality ;
         equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -28,6 +41,39 @@ public class SxParser<T>
         primary        → NUMBER | STRING | "true" | "false" | "nil"
                        | "(" expression ")" ;
      */
+
+    SxStatement Statement()
+    {
+        if (Match(SxTokenTypes.KeywordPrint))
+        {
+            return PrintStmt();
+        }
+
+        return ExprStmt();
+    }
+
+    SxStatement PrintStmt()
+    {
+        SxExpression expr = Expression();
+
+        if (Check(SxTokenTypes.Semicolon))
+        {
+            Consume(SxTokenTypes.Semicolon, "Očekáván ;");   
+        }
+
+        return new SxPrintStatement(expr);
+    }
+
+    SxStatement ExprStmt()
+    {
+        SxExpression expr = Expression();
+        if (Check(SxTokenTypes.Semicolon))
+        {
+            Consume(SxTokenTypes.Semicolon, "Očekáván ;");   
+        }
+
+        return new SxExpressionStatement(expr);
+    }
 
     // expression → ternary ;
     SxExpression Expression()

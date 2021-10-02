@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using SxScript.SxStatements;
 
 namespace SxScript
 {
@@ -21,6 +22,14 @@ namespace SxScript
         public static void TestAstPrinter2(SxExpression expr)
         {
             Console.WriteLine(new SxAstPrinter().Print(expr));
+        }
+        
+        public static void TestAstPrinter2(List<SxStatement> expr)
+        {
+            foreach (SxStatement stmt in expr)
+            {
+                Console.WriteLine(new SxAstPrinter().Print(stmt.Expr));   
+            }
         }
 
         public static async Task Main()
@@ -43,15 +52,15 @@ namespace SxScript
                 if (true)
                 {
                     SxParser<string> parser = new SxParser<string>(tokens);
-                    SxExpression expr = parser.Parse();
+                    List<SxStatement> exprStatements = parser.Parse();
 
-                    TestAstPrinter2(expr);
+                    //TestAstPrinter2(exprStatements);
 
                     SxInterpreter interpreter = new SxInterpreter();
-                    object obj = interpreter.Evaluate(expr);
+                    object? obj = interpreter.Evaluate(exprStatements);
                 
-                    Console.WriteLine("Výsledek interpretace:");
-                    Console.WriteLine(obj);
+                    //Console.WriteLine("Výsledek interpretace:");
+                    //Console.WriteLine(obj);
                 }
             
 
@@ -64,6 +73,8 @@ namespace SxScript
                 }
                 else
                 {
+                    Console.WriteLine("Tokeny");
+                    Console.WriteLine("---------------------");
                     foreach (SxToken token in tokens)
                     {
                         Console.WriteLine($"Token: {token.DebugPrint()}");
