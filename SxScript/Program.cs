@@ -18,9 +18,14 @@ namespace SxScript
             Console.WriteLine(new SxAstPrinter().Print(sxExpression));
         }
         
+        public static void TestAstPrinter2(SxExpression<string> expr)
+        {
+            Console.WriteLine(new SxAstPrinter().Print(expr));
+        }
+
         public static async Task Main()
         {
-            if (true)
+            if (false)
             {
                 TestAstPrinter();
                 Console.ReadKey();
@@ -32,6 +37,15 @@ namespace SxScript
             
             SxLexer lexer = new SxLexer(source[0]);
             List<SxToken> tokens = lexer.Tokenize();
+
+            if (true)
+            {
+                SxParser<string> parser = new SxParser<string>(tokens);
+                SxExpression<string> expr = parser.Parse();
+
+                TestAstPrinter2(expr);
+                Console.ReadKey();
+            }
 
             if (lexer.Messages.Count > 0)
             {

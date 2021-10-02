@@ -298,7 +298,37 @@ namespace SxScript
 
             void AddToken(SxTokenTypes type)
             {
-                SxToken token = new SxToken(type, currentLexeme, null, line);
+                object literal = null;
+
+                switch (type)
+                {
+                    case SxTokenTypes.String:
+                    {
+                        literal = currentLexeme;
+                        break;
+                    }
+                    case SxTokenTypes.Number:
+                    {
+                        if (currentLexeme.Contains("."))
+                        {
+                            if (double.TryParse(currentLexeme, out double d))
+                            {
+                                literal = d;
+                            }
+                        }
+                        else
+                        {
+                            if (int.TryParse(currentLexeme, out int i))
+                            {
+                                literal = i;
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
+                SxToken token = new SxToken(type, currentLexeme, literal, line);
                 Tokens.Add(token);
                 DiscardCurrentLexeme();
             }

@@ -17,7 +17,7 @@ public class SxAstPrinter : IExpressionVisitor<string>
 
     public string Visit(SxLiteralExpression<string> expr)
     {
-        return expr.Value.ToString() ?? "nill";
+        return expr?.Value?.ToString() ?? "nill";
     }
 
     public string Visit(SxGroupingExpression<string> expr)
