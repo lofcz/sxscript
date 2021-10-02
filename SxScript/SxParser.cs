@@ -17,14 +17,17 @@ public class SxParser<T>
         List<SxStatement> statements = new List<SxStatement>();
         while (!IsAtEnd())
         {
-            statements.Add(Statement());
+            statements.Add(Declaration());
         }
 
         return statements;
     }
     
     /*
-        expression     → statement * EOF ;
+        parse          → declaration * EOF ;
+        declaration    → varDeclr
+                         | statement ;
+        varDeclr       → "var"? IDENTIFIER ("=" expressin)? ";"? ;                   
         statement      → exprStmt
                          | printStmt ;
         printStmt      → "print" expression ";"? ;
@@ -38,9 +41,42 @@ public class SxParser<T>
         factor         → unary ( ( "/" | "*" ) unary )* ;
         unary          → ( "!" | "-" ) unary
                        | primary ;
-        primary        → NUMBER | STRING | "true" | "false" | "nil"
+        primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil"
                        | "(" expression ")" ;
      */
+
+    SxStatement Declaration()
+    {
+        if (Match(SxTokenTypes.KeywordVar))
+        {
+            return VarDeclr();
+        }
+
+        if (Check(SxTokenTypes.Identifier) && CheckNth(1, SxTokenTypes.Equal))
+        {
+            return VarDeclr();
+        }
+
+        return Statement();
+    }
+
+    SxStatement VarDeclr()
+    {
+        SxToken identifier = Consume(SxTokenTypes.Identifier, "Očekáván název proměnné");
+        SxExpression initialVal = null;
+        
+        if (Match(SxTokenTypes.Equal))
+        {
+            initialVal = Expression();
+        }
+
+        if (Check(SxTokenTypes.Semicolon))
+        {
+            Consume(SxTokenTypes.Semicolon, "Očekáván ;");
+        }
+
+        return new SxVarStatement(initialVal, identifier);
+    }
 
     SxStatement Statement()
     {
@@ -167,7 +203,7 @@ public class SxParser<T>
         return Primary();
     }
     
-    // primary → NUMBER | STRING | "true" | "false" | "nil" 
+    // primary → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" 
     // | "(" expression ")" ;
     SxExpression Primary()
     {
@@ -175,6 +211,11 @@ public class SxParser<T>
         {
             object val = Previous().Literal;
             return new SxLiteralExpression(val);
+        }
+
+        if (Match(SxTokenTypes.Identifier))
+        {
+            return new SxVarExpression(Previous());
         }
 
         if (Match(SxTokenTypes.True))
@@ -236,6 +277,16 @@ public class SxParser<T>
 
         return Peek().Type == type;
     }
+    
+    bool CheckNth(int n, SxTokenTypes type)
+    {
+        if (IsAtEnd())
+        {
+            return false;
+        }
+        
+        return PeekNth(n)?.Type == type;
+    }
 
     SxToken Step()
     {
@@ -255,6 +306,16 @@ public class SxParser<T>
     SxToken Peek()
     {
         return Tokens[Current];
+    }
+    
+    SxToken? PeekNth(int n = 1)
+    {
+        if (Tokens.Count >= Current + n)
+        {
+            return Tokens[Current + n];
+        }
+
+        return null;
     }
 
     SxToken Previous()

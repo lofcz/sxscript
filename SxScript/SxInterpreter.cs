@@ -4,6 +4,8 @@ namespace SxScript;
 
 public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatement.ISxStatementVisitor<object>
 {
+    public SxEnvironment Environment = new SxEnvironment();
+    
     public object? Visit(SxBinaryExpression expr)
     {
         object right = Evaluate(expr.Right);
@@ -138,6 +140,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return Evaluate(expr.CaseTrue);
     }
     
+    public object Visit(SxVarExpression expr)
+    {
+        return (Environment.Get(expr.Name.Lexeme) ?? null)!;
+    }
+
     public object? Evaluate(List<SxStatement> statements)
     {
         foreach (SxStatement statement in statements)
@@ -168,6 +175,13 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     {
         object val = Evaluate(expr.Expr);
         Console.WriteLine(val);
+        return null!;
+    }
+
+    public object Visit(SxVarStatement expr)
+    {
+        object val = Evaluate(expr.Expr);
+        Environment.Set(expr.Name.Lexeme, val);
         return null!;
     }
 }

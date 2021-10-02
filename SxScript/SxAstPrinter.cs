@@ -30,6 +30,11 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise("ternarni", expr.Expr, expr.CaseTrue, expr.CaseFalse);
     }
 
+    public string Visit(SxVarExpression expr)
+    {
+        return Parenthesise($"definice promenne - {expr.Name.Lexeme}");
+    }
+
     public string Print(SxExpression expression)
     {
         return expression.Accept(this);
