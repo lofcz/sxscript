@@ -24,7 +24,12 @@ public class SxAstPrinter : IExpressionVisitor<string>
     {
         return Parenthesise("zavorky", expr.Expr);
     }
-    
+
+    public string Visit(SxTernaryExpression<string> expr)
+    {
+        return Parenthesise("ternarni", expr.Expr, expr.CaseTrue, expr.CaseFalse);
+    }
+
     public string Print(SxExpression<string> expression)
     {
         return expression.Accept(this);

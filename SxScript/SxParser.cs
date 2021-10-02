@@ -15,10 +15,26 @@ public class SxParser<T>
         return Expression();
     }
 
-    // expression → equality ;
+    // expression → ternary ;
     SxExpression<T> Expression()
     {
-        return Equality();
+        return Ternary();
+    }
+    
+    // ternary → equality ? expression : expression
+    // | equality
+    SxExpression<T> Ternary()
+    {
+        SxExpression<T> expr = Equality();
+        if (Match(SxTokenTypes.Question))
+        {
+            SxExpression<T> caseTrue = Expression();
+            Consume(SxTokenTypes.Colon, "V ternárním operátoru chybí :");
+            SxExpression<T> caseFalse = Expression();
+            return new SxTernaryExpression<T>(expr, caseTrue, caseFalse);
+        }
+
+        return expr;
     }
 
     // equality → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -77,11 +93,11 @@ public class SxParser<T>
         return expr;
     }
     
-    // unary → ( "!" | "-" ) unary
+    // unary → ( "!" | "-" | "+" ) unary
     // | primary ;
     SxExpression<T> Unary()
     {
-        if (Match(SxTokenTypes.Exclamation, SxTokenTypes.Minus))
+        if (Match(SxTokenTypes.Exclamation, SxTokenTypes.Minus, SxTokenTypes.Plus))
         {
             SxToken op = Previous();
             SxExpression<T> right = Unary();

@@ -15,6 +15,8 @@ namespace SxScript
         Semicolon, // ;
         Slash, // /
         Star, // *
+        Question, // ?
+        Colon, // :
         Exclamation, // !
         ExclamationEqual, // !=
         Equal, // =

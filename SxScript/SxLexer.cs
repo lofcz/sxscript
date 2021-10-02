@@ -85,6 +85,10 @@ namespace SxScript
                          AddToken(SxTokenTypes.Minus); break;
                      case '*':
                          AddToken(SxTokenTypes.Star); break;
+                     case '?':
+                         AddToken(SxTokenTypes.Question); break;
+                     case ':':
+                         AddToken(SxTokenTypes.Colon); break;
                      case '=':
                      {
                          if (Match('='))
