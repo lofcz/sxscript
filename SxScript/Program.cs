@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using SxScript.SxStatements;
 
@@ -45,8 +46,14 @@ namespace SxScript
                 Console.WriteLine("Napiš program. Ukonči zápis slovem 'end' na samostatném řádku.");
                 List<string> source = ReadProgram();
                 string str = "";
+
+                StringBuilder sb = new StringBuilder();
+                foreach (string sbEntry in source)
+                {
+                    sb.Append($"{sbEntry}\n");
+                }
             
-                SxLexer lexer = new SxLexer(source[0]);
+                SxLexer lexer = new SxLexer(sb.ToString());
                 List<SxToken> tokens = lexer.Tokenize();
 
                 if (true)

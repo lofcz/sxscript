@@ -142,7 +142,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     {
         foreach (SxStatement statement in statements)
         {
-            object statementResult = statement.Accept(this);   
+            object statementResult = Execute(statement);
         }
 
         return null;
@@ -151,6 +151,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public object Evaluate(SxExpression expression)
     {
         return expression.Accept(this);
+    }
+    
+    public object Execute(SxStatement statement)
+    {
+        return statement.Accept(this);
     }
 
     public object Visit(SxExpressionStatement expr)
