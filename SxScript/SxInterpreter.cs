@@ -9,7 +9,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>
 
         if ((right is string rightStr || left is string leftStr) && expr.Operator.Type == SxTokenTypes.Plus)
         {
-            return right.ToString() + left.ToString();
+            return left.ToString() + right.ToString();
         }
 
         object? val = PerformArithmeticOperation(left, right, expr.Operator.Type);
