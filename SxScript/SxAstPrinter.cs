@@ -3,43 +3,43 @@ using System.Text;
 
 namespace SxScript;
 
-public class SxAstPrinter : IExpressionVisitor<string>
+public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
 {
-    public string Visit(SxBinaryExpression<string> expr)
+    public string Visit(SxBinaryExpression expr)
     {
         return Parenthesise(expr.Operator.Lexeme, expr.Left, expr.Right);
     }
 
-    public string Visit(SxUnaryExpression<string> expr)
+    public string Visit(SxUnaryExpression expr)
     {
         return Parenthesise(expr.Operator.Lexeme, expr.Expr);
     }
 
-    public string Visit(SxLiteralExpression<string> expr)
+    public string Visit(SxLiteralExpression expr)
     {
         return expr?.Value?.ToString() ?? "nill";
     }
 
-    public string Visit(SxGroupingExpression<string> expr)
+    public string Visit(SxGroupingExpression expr)
     {
         return Parenthesise("zavorky", expr.Expr);
     }
 
-    public string Visit(SxTernaryExpression<string> expr)
+    public string Visit(SxTernaryExpression expr)
     {
         return Parenthesise("ternarni", expr.Expr, expr.CaseTrue, expr.CaseFalse);
     }
 
-    public string Print(SxExpression<string> expression)
+    public string Print(SxExpression expression)
     {
         return expression.Accept(this);
     }
 
-    string Parenthesise(string name, params SxExpression<string>[] expressions)
+    string Parenthesise(string name, params SxExpression[] expressions)
     {
         StringBuilder sb = new StringBuilder();
         sb.Append("(").Append(name);
-        foreach (SxExpression<string> expression in expressions)
+        foreach (SxExpression expression in expressions)
         {
             sb.Append(" ");
             sb.Append(expression.Accept(this));

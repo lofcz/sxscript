@@ -10,84 +10,98 @@ public class SxParser<T>
         Tokens = tokens;
     }
 
-    public SxExpression<T> Parse()
+    public SxExpression Parse()
     {
         return Expression();
     }
+    
+    /*
+        expression     → ternary ;
+        ternary        → equality ? expression : expression
+                         | equality ;
+        equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+        comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+        term           → factor ( ( "-" | "+" ) factor )* ;
+        factor         → unary ( ( "/" | "*" ) unary )* ;
+        unary          → ( "!" | "-" ) unary
+                       | primary ;
+        primary        → NUMBER | STRING | "true" | "false" | "nil"
+                       | "(" expression ")" ;
+     */
 
     // expression → ternary ;
-    SxExpression<T> Expression()
+    SxExpression Expression()
     {
         return Ternary();
     }
     
     // ternary → equality ? expression : expression
     // | equality
-    SxExpression<T> Ternary()
+    SxExpression Ternary()
     {
-        SxExpression<T> expr = Equality();
+        SxExpression expr = Equality();
         if (Match(SxTokenTypes.Question))
         {
-            SxExpression<T> caseTrue = Expression();
+            SxExpression caseTrue = Expression();
             Consume(SxTokenTypes.Colon, "V ternárním operátoru chybí :");
-            SxExpression<T> caseFalse = Expression();
-            return new SxTernaryExpression<T>(expr, caseTrue, caseFalse);
+            SxExpression caseFalse = Expression();
+            return new SxTernaryExpression(expr, caseTrue, caseFalse);
         }
 
         return expr;
     }
 
     // equality → comparison ( ( "!=" | "==" ) comparison )* ;
-    SxExpression<T> Equality()
+    SxExpression Equality()
     {
-        SxExpression<T> expr = Comparison();
+        SxExpression expr = Comparison();
         while (Match(SxTokenTypes.ExclamationEqual, SxTokenTypes.EqualEqual))
         {
             SxToken op = Previous();
-            SxExpression<T> right = Comparison();
-            expr = new SxBinaryExpression<T>(expr, op, right);
+            SxExpression right = Comparison();
+            expr = new SxBinaryExpression(expr, op, right);
         }
 
         return expr;
     }
 
     // comparison → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-    SxExpression<T> Comparison()
+    SxExpression Comparison()
     {
-        SxExpression<T> expr = Term();
+        SxExpression expr = Term();
         while (Match(SxTokenTypes.Greater, SxTokenTypes.GreaterEqual, SxTokenTypes.Less, SxTokenTypes.LessEqual))
         {
             SxToken op = Previous();
-            SxExpression<T> right = Term();
-            expr = new SxBinaryExpression<T>(expr, op, right);
+            SxExpression right = Term();
+            expr = new SxBinaryExpression(expr, op, right);
         }
 
         return expr;
     }
     
     // term → factor ( ( "-" | "+" ) factor )* ;
-    SxExpression<T> Term()
+    SxExpression Term()
     {
-        SxExpression<T> expr = Factor();
+        SxExpression expr = Factor();
         while (Match(SxTokenTypes.Minus, SxTokenTypes.Plus))
         {
             SxToken op = Previous();
-            SxExpression<T> right = Factor();
-            expr = new SxBinaryExpression<T>(expr, op, right);
+            SxExpression right = Factor();
+            expr = new SxBinaryExpression(expr, op, right);
         }
 
         return expr;
     }
 
     // factor → unary ( ( "/" | "*" ) unary )* ;
-    SxExpression<T> Factor()
+    SxExpression Factor()
     {
-        SxExpression<T> expr = Unary();
+        SxExpression expr = Unary();
         while (Match(SxTokenTypes.Slash, SxTokenTypes.Star))
         {
             SxToken op = Previous();
-            SxExpression<T> right = Unary();
-            expr = new SxBinaryExpression<T>(expr, op, right);
+            SxExpression right = Unary();
+            expr = new SxBinaryExpression(expr, op, right);
         }
 
         return expr;
@@ -95,13 +109,13 @@ public class SxParser<T>
     
     // unary → ( "!" | "-" | "+" ) unary
     // | primary ;
-    SxExpression<T> Unary()
+    SxExpression Unary()
     {
         if (Match(SxTokenTypes.Exclamation, SxTokenTypes.Minus, SxTokenTypes.Plus))
         {
             SxToken op = Previous();
-            SxExpression<T> right = Unary();
-            return new SxUnaryExpression<T>(op, right);
+            SxExpression right = Unary();
+            return new SxUnaryExpression(op, right);
         }
         
         return Primary();
@@ -109,34 +123,34 @@ public class SxParser<T>
     
     // primary → NUMBER | STRING | "true" | "false" | "nil" 
     // | "(" expression ")" ;
-    SxExpression<T> Primary()
+    SxExpression Primary()
     {
         if (Match(SxTokenTypes.Number, SxTokenTypes.String))
         {
             object val = Previous().Literal;
-            return new SxLiteralExpression<T>(val);
+            return new SxLiteralExpression(val);
         }
 
         if (Match(SxTokenTypes.True))
         {
-            return new SxLiteralExpression<T>(true);
+            return new SxLiteralExpression(true);
         }
 
         if (Match(SxTokenTypes.False))
         {
-            return new SxLiteralExpression<T>(false);
+            return new SxLiteralExpression(false);
         }
 
         if (Match(SxTokenTypes.Nill))
         {
-            return new SxLiteralExpression<T>(null);
+            return new SxLiteralExpression(null);
         }
 
         if (Match(SxTokenTypes.LeftParen))
         {
-            SxExpression<T> expr = Expression();
+            SxExpression expr = Expression();
             Consume(SxTokenTypes.RightParen, "Očekávána ) k ukončení páru kulatých závorek");
-            return new SxGroupingExpression<T>(expr);
+            return new SxGroupingExpression(expr);
         }
 
         return null;

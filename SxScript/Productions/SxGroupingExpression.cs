@@ -2,16 +2,16 @@ using System.Linq.Expressions;
 
 namespace SxScript;
 
-public class SxGroupingExpression<T> : SxExpression<T>
+public class SxGroupingExpression : SxExpression
 {
-    public SxExpression<T> Expr { get; set; }
+    public SxExpression Expr { get; set; }
 
-    public SxGroupingExpression(SxExpression<T> expr)
+    public SxGroupingExpression(SxExpression expr)
     {
         Expr = expr;
     }
 
-    public override T Accept(IExpressionVisitor<T> visitor)
+    public override T Accept<T>(ISxExpressionVisitor<T> visitor)
     {
         return visitor.Visit(this);
     }

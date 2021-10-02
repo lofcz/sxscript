@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 namespace SxScript;
 
-public class SxLiteralExpression<T> : SxExpression<T>
+public class SxLiteralExpression : SxExpression
 {
     public object Value { get; set; }
 
@@ -10,7 +10,7 @@ public class SxLiteralExpression<T> : SxExpression<T>
         Value = value;
     }
 
-    public override T Accept(IExpressionVisitor<T> visitor)
+    public override T Accept<T>(ISxExpressionVisitor<T> visitor)
     {
         return visitor.Visit(this);
     }

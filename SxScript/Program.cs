@@ -8,61 +8,70 @@ namespace SxScript
     {
         public static void TestAstPrinter()
         {
-            SxExpression<string> sxExpression = new SxBinaryExpression<string>(
-                new SxUnaryExpression<string>(
+            SxExpression sxExpression = new SxBinaryExpression(
+                new SxUnaryExpression(
                     new SxToken(SxTokenTypes.Minus, "-", null, 1),
-                    new SxLiteralExpression<string>(123)),
+                    new SxLiteralExpression(123)),
                 new SxToken(SxTokenTypes.Star, "*", null, 1),
-                new SxGroupingExpression<string>(new SxLiteralExpression<string>(45.67)));
+                new SxGroupingExpression(new SxLiteralExpression(45.67)));
 
             Console.WriteLine(new SxAstPrinter().Print(sxExpression));
         }
         
-        public static void TestAstPrinter2(SxExpression<string> expr)
+        public static void TestAstPrinter2(SxExpression expr)
         {
             Console.WriteLine(new SxAstPrinter().Print(expr));
         }
 
         public static async Task Main()
         {
-            if (false)
+            while (true)
             {
-                TestAstPrinter();
-                Console.ReadKey();
-            }
-            
-            Console.WriteLine("Napiš program. Ukonči zápis slovem 'end' na samostatném řádku.");
-            List<string> source = ReadProgram();
-            string str = "";
-            
-            SxLexer lexer = new SxLexer(source[0]);
-            List<SxToken> tokens = lexer.Tokenize();
-
-            if (true)
-            {
-                SxParser<string> parser = new SxParser<string>(tokens);
-                SxExpression<string> expr = parser.Parse();
-
-                TestAstPrinter2(expr);
-                Console.ReadKey();
-            }
-
-            if (lexer.Messages.Count > 0)
-            {
-                foreach (string message in lexer.Messages)
+                if (false)
                 {
-                    Console.WriteLine(message);
+                    TestAstPrinter();
+                    Console.ReadKey();
                 }
-            }
-            else
-            {
-                foreach (SxToken token in tokens)
-                {
-                    Console.WriteLine($"Token: {token.DebugPrint()}");
-                } 
-            }
+            
+                Console.WriteLine("Napiš program. Ukonči zápis slovem 'end' na samostatném řádku.");
+                List<string> source = ReadProgram();
+                string str = "";
+            
+                SxLexer lexer = new SxLexer(source[0]);
+                List<SxToken> tokens = lexer.Tokenize();
 
-            Console.ReadKey();
+                if (true)
+                {
+                    SxParser<string> parser = new SxParser<string>(tokens);
+                    SxExpression expr = parser.Parse();
+
+                    TestAstPrinter2(expr);
+
+                    SxInterpreter interpreter = new SxInterpreter();
+                    object obj = interpreter.Evaluate(expr);
+                
+                    Console.WriteLine("Výsledek interpretace:");
+                    Console.WriteLine(obj);
+                }
+            
+
+                if (lexer.Messages.Count > 0)
+                {
+                    foreach (string message in lexer.Messages)
+                    {
+                        Console.WriteLine(message);
+                    }
+                }
+                else
+                {
+                    foreach (SxToken token in tokens)
+                    {
+                        Console.WriteLine($"Token: {token.DebugPrint()}");
+                    } 
+                }
+
+                Console.ReadKey();   
+            }
         }
 
         public static List<string> ReadProgram()
