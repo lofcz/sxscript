@@ -64,8 +64,17 @@ namespace SxScript
                     //TestAstPrinter2(exprStatements);
 
                     SxInterpreter interpreter = new SxInterpreter();
-                    object? obj = interpreter.Evaluate(exprStatements);
-                
+
+                    if (exprStatements.Count == 1 && exprStatements[0] is SxExpressionStatement exprStmt)
+                    {
+                        object obj = interpreter.Evaluate(exprStmt.Expr);
+                        Console.WriteLine($"Evaluováno na: {obj}");
+                    }
+                    else
+                    {
+                        object? obj = interpreter.Evaluate(exprStatements);   
+                    }
+
                     //Console.WriteLine("Výsledek interpretace:");
                     //Console.WriteLine(obj);
                 }

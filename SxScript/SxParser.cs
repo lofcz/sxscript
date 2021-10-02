@@ -27,12 +27,16 @@ public class SxParser<T>
         parse          → declaration * EOF ;
         declaration    → varDeclr
                          | statement ;
-        varDeclr       → "var"? IDENTIFIER ("=" expressin)? ";"? ;                   
+        varDeclr       → "var"? IDENTIFIER ("=" expression)? ";"? ;                   
         statement      → exprStmt
-                         | printStmt ;
+                         | printStmt 
+                         | block ;
+        block          → "{" declaration * "}" ;        
         printStmt      → "print" expression ";"? ;
-        exprStmt       → expression ";"?      
-        expression     → ternary ";" ;      
+        exprStmt       → expression ";"? ;     
+        expression     → assignment ";" ;
+        assignment     → IDENTIFIER "=" assignment
+                         | ternary      
         ternary        → equality "?" expression ":" expression
                          | equality ;
         equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -52,10 +56,10 @@ public class SxParser<T>
             return VarDeclr();
         }
 
-        if (Check(SxTokenTypes.Identifier) && CheckNth(1, SxTokenTypes.Equal))
+        /*if (Check(SxTokenTypes.Identifier) && CheckNth(1, SxTokenTypes.Equal))
         {
             return VarDeclr();
-        }
+        }*/
 
         return Statement();
     }
@@ -85,7 +89,25 @@ public class SxParser<T>
             return PrintStmt();
         }
 
+        if (Match(SxTokenTypes.LeftBrace))
+        {
+            return new SxBlockStatement(Block());
+        }
+
         return ExprStmt();
+    }
+
+    List<SxStatement> Block()
+    {
+        List<SxStatement> statements = new List<SxStatement>();
+
+        while (!Check(SxTokenTypes.RightBrace) && !IsAtEnd())
+        {
+            statements.Add(Declaration());
+        }
+
+        Consume(SxTokenTypes.RightBrace, "Očekávána }");
+        return statements;
     }
 
     SxStatement PrintStmt()
@@ -114,9 +136,30 @@ public class SxParser<T>
     // expression → ternary ;
     SxExpression Expression()
     {
-        return Ternary();
+        return Assignment();
     }
     
+    SxExpression Assignment()
+    {
+        SxExpression expr = Ternary();
+        
+        if (Match(SxTokenTypes.Equal))
+        {
+            SxToken equals = Previous();
+            SxExpression value = Assignment();
+
+            if (expr is SxVarExpression varExpr)
+            {
+                SxToken name = varExpr.Name;
+                return new SxAssignExpression(name, value);
+            }
+            
+            // [todo] error, neplatný cíl pro přiřazení
+        }
+
+        return expr;
+    }
+
     // ternary → equality ? expression : expression
     // | equality
     SxExpression Ternary()

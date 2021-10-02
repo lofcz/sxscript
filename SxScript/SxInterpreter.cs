@@ -4,7 +4,7 @@ namespace SxScript;
 
 public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatement.ISxStatementVisitor<object>
 {
-    public SxEnvironment Environment = new SxEnvironment();
+    public SxEnvironment Environment = new SxEnvironment(null);
     
     public object? Visit(SxBinaryExpression expr)
     {
@@ -145,6 +145,12 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return (Environment.Get(expr.Name.Lexeme) ?? null)!;
     }
 
+    public object Visit(SxAssignExpression expr)
+    {
+        Environment.SetIfDefined(expr.Name.Lexeme, Evaluate(expr.Value));
+        return null!;
+    }
+
     public object? Evaluate(List<SxStatement> statements)
     {
         foreach (SxStatement statement in statements)
@@ -183,5 +189,23 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         object val = Evaluate(expr.Expr);
         Environment.Set(expr.Name.Lexeme, val);
         return null!;
+    }
+
+    public object Visit(SxBlockStatement expr)
+    {
+        ExecuteBlock(expr.Statements, new SxEnvironment(Environment));
+        return null!;
+    }
+
+    void ExecuteBlock(List<SxStatement> statements, SxEnvironment environment)
+    {
+        SxEnvironment previous = Environment;
+        Environment = environment;
+        foreach (SxStatement statement in statements)
+        {
+            Execute(statement);
+        }
+
+        Environment = previous;
     }
 }

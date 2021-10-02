@@ -10,6 +10,7 @@ public abstract class SxExpression
       T Visit(SxGroupingExpression expr);
       T Visit(SxTernaryExpression expr);
       T Visit(SxVarExpression expr);
+      T Visit(SxAssignExpression expr);
    }
 
    public abstract T Accept<T>(ISxExpressionVisitor<T> visitor);

@@ -35,6 +35,11 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise($"definice promenne - {expr.Name.Lexeme}");
     }
 
+    public string Visit(SxAssignExpression expr)
+    {
+        return Parenthesise($"nastaveni hodnoty promenne - {expr.Name.Lexeme}", expr.Value);
+    }
+
     public string Print(SxExpression expression)
     {
         return expression.Accept(this);
