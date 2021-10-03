@@ -33,3 +33,5 @@
 SxScript/obj
 SxScript/bin
 .idea
+SxScriptTests/obj
+SxScriptTests/bin
