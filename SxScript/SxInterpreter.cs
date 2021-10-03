@@ -246,6 +246,16 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null!;
     }
 
+    public object Visit(SxWhileStatement expr)
+    {
+        while (ObjectIsTruthy(Evaluate(expr.Expr)))
+        {
+            Execute(expr.Statement);
+        }
+
+        return null!;
+    }
+
     void ExecuteBlock(List<SxStatement> statements, SxEnvironment environment)
     {
         SxEnvironment previous = Environment;

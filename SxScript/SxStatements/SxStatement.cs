@@ -9,6 +9,7 @@ public abstract class SxStatement
         T Visit(SxVarStatement expr);
         T Visit(SxBlockStatement expr);
         T Visit(SxIfStatement expr);
+        T Visit(SxWhileStatement expr);
     }
     
     public SxExpression Expr { get; set; }

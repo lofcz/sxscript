@@ -30,8 +30,10 @@ public class SxParser<T>
         varDeclr       → "var"? IDENTIFIER ("=" expression)? ";"? ;                   
         statement      → exprStmt
                          | ifStmt
+                         | whileStmt
                          | printStmt 
                          | block ;
+        whileStmt      → "while" "("? expression ")"? statement ;            
         ifStmt         → "if" "("? expression ")"? statement
                          ( "else" statement )? ;                 
         block          → "{" declaration * "}" ;        
@@ -104,9 +106,32 @@ public class SxParser<T>
             return IfStmt();
         }
 
+        if (Match(SxTokenTypes.KeywordWhile))
+        {
+            return WhileStmt();
+        }
+
         return ExprStmt();
     }
 
+    SxStatement WhileStmt()
+    {
+        if (Match(SxTokenTypes.LeftParen))
+        {
+            // (    
+        }
+
+        SxExpression expr = Expression();
+
+        if (Match(SxTokenTypes.RightParen))
+        {
+            // )
+        }
+
+        SxStatement statement = Statement();
+        return new SxWhileStatement(expr, statement);
+    }
+    
     SxStatement IfStmt()
     {
         if (Match(SxTokenTypes.LeftParen))
