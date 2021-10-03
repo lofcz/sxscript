@@ -1,3 +1,4 @@
+using SxScript.Exceptions;
 using SxScript.SxStatements;
 
 namespace SxScript;
@@ -6,6 +7,7 @@ public class SxParser<T>
 {
     private List<SxToken> Tokens { get; set; }
     private int Current { get; set; }
+    private int LoopDepth { get; set; }
     
     public SxParser(List<SxToken> tokens)
     {
@@ -31,8 +33,15 @@ public class SxParser<T>
         statement      → exprStmt
                          | ifStmt
                          | whileStmt
+                         | forStmt
+                         | gotoStmt
+                         | labeledStmt
                          | printStmt 
                          | block ;
+        gotoStmt       → "goto" IDENTIFIER ";"? ;   
+        labeledStmt    → IDENTIFIER ":" statement                   
+        continueStmt   → "continue" ";"? ;            
+        forStmt        → "for" "("? (varDeclr | exprStmt | ";"?) expression? ";"? expression? ";"? ")"? statement ;          
         whileStmt      → "while" "("? expression ")"? statement ;            
         ifStmt         → "if" "("? expression ")"? statement
                          ( "else" statement )? ;                 
@@ -111,25 +120,193 @@ public class SxParser<T>
             return WhileStmt();
         }
 
+        if (Match(SxTokenTypes.KeywordFor))
+        {
+            return ForStmt();
+        }
+
+        if (Match(SxTokenTypes.KeywordBreak))
+        {
+            return BreakStmt();
+        }
+
+        if (Check(SxTokenTypes.Identifier) && CheckNth(1, SxTokenTypes.Colon))
+        {
+            return LabeledStmt();
+        }
+        
+        if (Match(SxTokenTypes.KeywordGoto))
+        {
+            return GotoStmt();
+        }
+
         return ExprStmt();
     }
 
-    SxStatement WhileStmt()
+    SxStatement GotoStmt()
+    {
+        SxToken identifier = Consume(SxTokenTypes.Identifier, "Očekáván název návěští");
+        if (Check(SxTokenTypes.Semicolon))
+        {
+            Consume(SxTokenTypes.Semicolon, "Očekáván ;");
+        }
+
+        return new SxGotoStatement(identifier);
+    }
+
+    SxStatement LabeledStmt()
+    {
+        SxToken identifier = null;
+        
+        if (Match(SxTokenTypes.Identifier))
+        {
+            identifier = Previous();
+        }
+
+        Consume(SxTokenTypes.Colon, "Očekávána :");
+
+        SxStatement statement = Statement();
+        return new SxLabelStatement(identifier, statement);
+    }
+
+    SxStatement BreakStmt()
+    {
+        if (Match(SxTokenTypes.Semicolon))
+        {
+            // ;
+        }
+
+        if (LoopDepth == 0)
+        {
+            // [todo] chyba, musí být uvnitř cyklu pro použití break
+        }
+
+        return new SxBreakStatement();
+    }
+
+    // forStmt → "for" "("? (varDeclr | exprStmt | ";"?) expression? ";"? expression? ")"? statement ;     
+    // dekonstrukce na:
+    // {
+    //  var i = initializer
+    //  while (i operator condition | true) 
+    //  {
+    //   statement
+    //   increment
+    //  }
+    // }
+    SxStatement ForStmt()
     {
         if (Match(SxTokenTypes.LeftParen))
         {
             // (    
         }
 
-        SxExpression expr = Expression();
+        SxStatement initializer;
+        if (Match(SxTokenTypes.Semicolon))
+        {
+            initializer = null;
+        }
+        else if (Match(SxTokenTypes.KeywordVar))
+        {
+            initializer = VarDeclr();
+        }
+        else
+        {
+            initializer = ExprStmt();
+        }
+
+        SxExpression condition;
+        if (Check(SxTokenTypes.Semicolon))
+        {
+            condition = null;
+        }
+        else
+        {
+            condition = Expression();
+        }
+
+        if (Match(SxTokenTypes.Semicolon))
+        {
+            // ;
+        }
+
+        SxExpression increment;
+        if (Check(SxTokenTypes.RightParen))
+        {
+            increment = null;
+        }
+        else
+        {
+            increment = Expression();
+        }
 
         if (Match(SxTokenTypes.RightParen))
         {
-            // )
+            // )    
         }
 
-        SxStatement statement = Statement();
-        return new SxWhileStatement(expr, statement);
+        try
+        {
+            LoopDepth++;
+            SxStatement statement = Statement();
+
+            if (increment != null)
+            {
+                statement = new SxBlockStatement(new List<SxStatement>() {statement, new SxExpressionStatement(increment)});
+            }
+
+            if (condition == null)
+            {
+                condition = new SxLiteralExpression(true);
+            }
+
+            statement = new SxWhileStatement(condition, statement);
+
+            if (initializer != null)
+            {
+                statement = new SxBlockStatement(new List<SxStatement>() {initializer, statement});
+            }
+            
+            return statement;
+        }
+        catch (SxBreakException e) // [todo] break, continue na špatném místě
+        {
+            return null!;
+        }
+        finally
+        {
+            LoopDepth--;
+        }
+    }
+
+    SxStatement WhileStmt()
+    {
+        try
+        {
+            if (Match(SxTokenTypes.LeftParen))
+            {
+                // (    
+            }
+
+            SxExpression expr = Expression();
+
+            if (Match(SxTokenTypes.RightParen))
+            {
+                // )
+            }
+
+            LoopDepth++;
+            SxStatement statement = Statement();
+            return new SxWhileStatement(expr, statement);
+        }
+        catch (SxBreakException e)
+        {
+            return null!;
+        }
+        finally
+        {
+            LoopDepth--;
+        }
     }
     
     SxStatement IfStmt()

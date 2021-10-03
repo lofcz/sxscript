@@ -10,6 +10,9 @@ public abstract class SxStatement
         T Visit(SxBlockStatement expr);
         T Visit(SxIfStatement expr);
         T Visit(SxWhileStatement expr);
+        T Visit(SxBreakStatement expr);
+        T Visit(SxLabelStatement expr);
+        T Visit(SxGotoStatement expr);
     }
     
     public SxExpression Expr { get; set; }

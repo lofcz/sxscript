@@ -1,3 +1,5 @@
+using System.Text;
+using SxScript.Exceptions;
 using SxScript.SxStatements;
 
 namespace SxScript;
@@ -5,6 +7,14 @@ namespace SxScript;
 public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatement.ISxStatementVisitor<object>
 {
     public SxEnvironment Environment = new SxEnvironment(null);
+    public SortedList<int, SxStatement> AllStatements = new SortedList<int, SxStatement>();
+    public Dictionary<string, SxLabelStatement> Labels = new Dictionary<string, SxLabelStatement>();
+    public SxStatement CurrentStatement = null;
+    public bool Jump = false;
+    public SxToken JumpDestination = null;
+    public int CurrentStatementIndex = 0;
+    public StringBuilder StdIn { get; set; } = null;
+    public StringBuilder StdOut { get; set; } = null;
     
     public object? Visit(SxBinaryExpression expr)
     {
@@ -75,6 +85,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public bool AssertTypeOf(object obj, string errMsg, SxToken closestToken, params Type[] types)
     {
+        if (obj == null)
+        {
+            return false;
+        }
+        
         Type objT = obj.GetType();
         
         for (int i = 0; i < types.Length; i++)
@@ -183,13 +198,52 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return Evaluate(expr.Right);
     }
 
-    public object? Evaluate(List<SxStatement> statements)
+    public void WriteLine(object str)
     {
-        foreach (SxStatement statement in statements)
+        if (StdOut == null)
         {
-            object statementResult = Execute(statement);
+            Console.WriteLine(str);
+        }
+        else
+        {
+            StdOut.Append($"{str}\n");
+        }
+    }
+
+    public object? Evaluate(List<SxStatement> statements, StringBuilder stdout = null, StringBuilder stdin = null)
+    {
+        AllStatements = new SortedList<int, SxStatement>();
+        for (int i = 0; i < statements.Count; i++)
+        {
+            AllStatements.Add(i, statements[i]);
         }
 
+        StdIn = stdin;
+        StdOut = stdout;
+
+        for (CurrentStatementIndex = 0; CurrentStatementIndex < statements.Count; CurrentStatementIndex++)
+        {
+            SxStatement statement = statements[CurrentStatementIndex];
+            object statementResult = Execute(statement);
+
+            if (Jump)
+            {
+                Jump = false;
+                if (JumpDestination != null)
+                {
+                    if (Labels.TryGetValue(JumpDestination.Lexeme, out SxLabelStatement? lblStmt))
+                    {
+                        int index = AllStatements.IndexOfValue(lblStmt);
+                        if (index >= 0)
+                        {
+                            CurrentStatementIndex = index - 1;
+                            JumpDestination = null;
+                        }
+                    }
+                }
+            }
+        }
+        
         return null;
     }
 
@@ -212,7 +266,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public object Visit(SxPrintStatement expr)
     {
         object val = Evaluate(expr.Expr);
-        Console.WriteLine(val);
+        WriteLine(val);
         return null!;
     }
 
@@ -248,11 +302,41 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public object Visit(SxWhileStatement expr)
     {
-        while (ObjectIsTruthy(Evaluate(expr.Expr)))
+        try
         {
-            Execute(expr.Statement);
+            while (ObjectIsTruthy(Evaluate(expr.Expr)))
+            {
+                Execute(expr.Statement);
+            }
+        }
+        catch (SxBreakException e)
+        {
+            // ukončí cykl
         }
 
+        return null!;
+    }
+
+    public object Visit(SxBreakStatement expr)
+    {
+        throw new SxBreakException();
+    }
+
+    public object Visit(SxLabelStatement expr)
+    {
+        if (!Labels.TryGetValue(expr.Identifier.Lexeme, out _))
+        {
+            Labels.Add(expr.Identifier.Lexeme, expr);   
+        }
+        
+        Execute(expr.Statement);
+        return null!;
+    }
+
+    public object Visit(SxGotoStatement expr)
+    {
+        Jump = true;
+        JumpDestination = expr.Identifier;
         return null!;
     }
 
