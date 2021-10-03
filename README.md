@@ -24,8 +24,8 @@ Embeddable scripting language for C# written in C#.
     - [ ] foreach
   - jump
     - [x] goto
-    - [ ] break
-    - [ ] continue
+    - [x] break
+    - [x] continue
     - [ ] return
    - labeled
     - [x] label
@@ -58,7 +58,7 @@ Embeddable scripting language for C# written in C#.
  - operators
   - [x] assignment
   - [x] unary +, -
-  - [x] binary +, -, *, /  
+  - [x] binary +, -, *, /, %  
   - [ ] +=, *=, /=, -=
   - [ ] ++, --   
  - comments
