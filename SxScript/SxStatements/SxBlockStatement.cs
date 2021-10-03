@@ -1,8 +1,10 @@
 namespace SxScript.SxStatements;
 
-public class SxBlockStatement : SxStatement
+public class SxBlockStatement : SxStatement, SxStatement.ISxBreakableStatement
 {
     public List<SxStatement> Statements { get; set; }
+    public bool Break { get; set; }
+    public bool Continue { get; set; }
     
     public override T Accept<T>(ISxStatementVisitor<T> visitor)
     {
@@ -13,5 +15,7 @@ public class SxBlockStatement : SxStatement
     {
         Statements = statements;
         Expr = null!;
+        Break = false;
+        Continue = false;
     }
 }

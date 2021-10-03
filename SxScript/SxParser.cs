@@ -36,8 +36,12 @@ public class SxParser<T>
                          | forStmt
                          | gotoStmt
                          | labeledStmt
-                         | printStmt 
+                         | printStmt
+                         | breakStmt
+                         | continueStmt 
                          | block ;
+        breakStmt      → "break" ";"? ;
+        continueStmt   → "continue" ";"? ;
         gotoStmt       → "goto" IDENTIFIER ";"? ;   
         labeledStmt    → IDENTIFIER ":" statement                   
         continueStmt   → "continue" ";"? ;            
@@ -58,7 +62,7 @@ public class SxParser<T>
         equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         term           → factor ( ( "-" | "+" ) factor )* ;
-        factor         → unary ( ( "/" | "*" ) unary )* ;
+        factor         → unary ( ( "%" | "/" | "*" ) unary )* ;
         unary          → ( "!" | "-" ) unary
                        | primary ;
         primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil"
@@ -129,6 +133,11 @@ public class SxParser<T>
         {
             return BreakStmt();
         }
+        
+        if (Match(SxTokenTypes.KeywordContinue))
+        {
+            return ContinueStmt();
+        }
 
         if (Check(SxTokenTypes.Identifier) && CheckNth(1, SxTokenTypes.Colon))
         {
@@ -182,6 +191,21 @@ public class SxParser<T>
         }
 
         return new SxBreakStatement();
+    }
+    
+    SxStatement ContinueStmt()
+    {
+        if (Match(SxTokenTypes.Semicolon))
+        {
+            // ;
+        }
+
+        if (LoopDepth == 0)
+        {
+            // [todo] chyba, musí být uvnitř cyklu pro použití break
+        }
+
+        return new SxContinueStatement();
     }
 
     // forStmt → "for" "("? (varDeclr | exprStmt | ";"?) expression? ";"? expression? ")"? statement ;     
@@ -245,38 +269,9 @@ public class SxParser<T>
             // )    
         }
 
-        try
-        {
-            LoopDepth++;
-            SxStatement statement = Statement();
-
-            if (increment != null)
-            {
-                statement = new SxBlockStatement(new List<SxStatement>() {statement, new SxExpressionStatement(increment)});
-            }
-
-            if (condition == null)
-            {
-                condition = new SxLiteralExpression(true);
-            }
-
-            statement = new SxWhileStatement(condition, statement);
-
-            if (initializer != null)
-            {
-                statement = new SxBlockStatement(new List<SxStatement>() {initializer, statement});
-            }
-            
-            return statement;
-        }
-        catch (SxBreakException e) // [todo] break, continue na špatném místě
-        {
-            return null!;
-        }
-        finally
-        {
-            LoopDepth--;
-        }
+        // [todo] loop depth inc
+        SxStatement statement = Statement();
+        return new SxForStatement(initializer, condition, increment, statement);
     }
 
     SxStatement WhileStmt()
@@ -481,11 +476,11 @@ public class SxParser<T>
         return expr;
     }
 
-    // factor → unary ( ( "/" | "*" ) unary )* ;
+    // factor → unary ( ( "%" | "/" | "*" ) unary )* ;
     SxExpression Factor()
     {
         SxExpression expr = Unary();
-        while (Match(SxTokenTypes.Slash, SxTokenTypes.Star))
+        while (Match(SxTokenTypes.Slash, SxTokenTypes.Star, SxTokenTypes.Percent))
         {
             SxToken op = Previous();
             SxExpression right = Unary();

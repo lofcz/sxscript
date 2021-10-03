@@ -1,0 +1,7 @@
+for (i = 0; i < 1; i = i + 1) {
+   print "hello";
+   print "world";
+   break;
+   print "hi2"
+   print "world2"
+}

@@ -13,6 +13,19 @@ public abstract class SxStatement
         T Visit(SxBreakStatement expr);
         T Visit(SxLabelStatement expr);
         T Visit(SxGotoStatement expr);
+        T Visit(SxForStatement expr);
+        T Visit(SxContinueStatement expr);
+    }
+    
+    public interface ISxBreakableStatement
+    {
+        public bool Break { get; set; }
+        public bool Continue { get; set; }
+    }
+    
+    public interface ISxLoopingStatement : ISxBreakableStatement
+    {
+        public SxStatement Statement { get; set; }
     }
     
     public SxExpression Expr { get; set; }

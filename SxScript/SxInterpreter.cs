@@ -15,7 +15,10 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public int CurrentStatementIndex = 0;
     public StringBuilder StdIn { get; set; } = null;
     public StringBuilder StdOut { get; set; } = null;
-    
+    public int LoopDepth = 0;
+    public Stack<SxStatement> LoopStack = new Stack<SxStatement>();
+    public SxStatement.ISxLoopingStatement CurrentLoopStatement = null;
+
     public object? Visit(SxBinaryExpression expr)
     {
         object right = Evaluate(expr.Right);
@@ -73,6 +76,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
             SxTokenTypes.Minus => (object) ((dynamic) left - (dynamic) right),
             SxTokenTypes.Star => (object) ((dynamic) left * (dynamic) right),
             SxTokenTypes.Slash => (object) ((dynamic) left / (dynamic) right),
+            SxTokenTypes.Percent => (object) ((dynamic) left % (dynamic) right),
             SxTokenTypes.Greater => (object) ((dynamic) left > (dynamic) right),
             SxTokenTypes.GreaterEqual => (object) ((dynamic) left >= (dynamic) right),
             SxTokenTypes.Less => (object) ((dynamic) left < (dynamic) right),
@@ -279,7 +283,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public object Visit(SxBlockStatement expr)
     {
-        ExecuteBlock(expr.Statements, new SxEnvironment(Environment));
+        ExecuteBlock(expr, expr.Statements, new SxEnvironment(Environment));
         return null!;
     }
 
@@ -302,24 +306,52 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public object Visit(SxWhileStatement expr)
     {
-        try
+        LoopDepth++;
+        LoopStack.Push(expr.Statement);
+        CurrentLoopStatement = expr;
+        
+        while (ObjectIsTruthy(Evaluate(expr.Expr)))
         {
-            while (ObjectIsTruthy(Evaluate(expr.Expr)))
+            if (expr.Continue)
             {
-                Execute(expr.Statement);
+                expr.Continue = false;
+                continue;
             }
-        }
-        catch (SxBreakException e)
-        {
-            // ukončí cykl
+
+            if (expr.Break)
+            {
+                expr.Break = false;
+                break;
+            }
+            
+            Execute(expr.Statement);
         }
 
+        LoopStack.Pop();
+        LoopDepth--;
         return null!;
     }
 
     public object Visit(SxBreakStatement expr)
     {
-        throw new SxBreakException();
+        CurrentLoopStatement.Break = true;
+        if (CurrentLoopStatement.Statement is SxStatement.ISxBreakableStatement breakableStatement)
+        {
+            breakableStatement.Break = true;
+        }
+        
+        return null!;
+    }
+    
+    public object Visit(SxContinueStatement expr)
+    {
+        CurrentLoopStatement.Continue = true;
+        if (CurrentLoopStatement.Statement is SxStatement.ISxBreakableStatement breakableStatement)
+        {
+            breakableStatement.Continue = true;
+        }
+        
+        return null!;
     }
 
     public object Visit(SxLabelStatement expr)
@@ -340,13 +372,51 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null!;
     }
 
-    void ExecuteBlock(List<SxStatement> statements, SxEnvironment environment)
+    public object Visit(SxForStatement expr)
+    {
+        LoopDepth++;
+        LoopStack.Push(expr.Statement);
+        CurrentLoopStatement = expr;
+        
+        Execute(expr.Initializer);
+
+        while (ObjectIsTruthy(Evaluate(expr.Condition)))
+        {
+            if (expr.Continue)
+            {
+                expr.Continue = false;
+                continue;
+            }
+
+            if (expr.Break)
+            {
+                expr.Break = false;
+                break;
+            }
+            
+            Execute(expr.Statement);
+            Evaluate(expr.Increment);
+        }
+
+        LoopStack.Pop();
+        LoopDepth--;
+        return null!;
+    }
+
+    void ExecuteBlock(SxBlockStatement blockStatement, List<SxStatement> statements, SxEnvironment environment)
     {
         SxEnvironment previous = Environment;
         Environment = environment;
         foreach (SxStatement statement in statements)
         {
             Execute(statement);
+            
+            if (blockStatement.Break || blockStatement.Continue)
+            {
+                blockStatement.Break = false;
+                blockStatement.Continue = false;
+                break;
+            }
         }
 
         Environment = previous;

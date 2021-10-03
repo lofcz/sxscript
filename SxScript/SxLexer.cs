@@ -90,6 +90,8 @@ namespace SxScript
                          AddToken(SxTokenTypes.Question); break;
                      case ':':
                          AddToken(SxTokenTypes.Colon); break;
+                     case '%':
+                         AddToken(SxTokenTypes.Percent); break;
                      case '&':
                      {
                          if (Match('&'))

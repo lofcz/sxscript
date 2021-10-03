@@ -16,6 +16,12 @@ public class SxTestRunner
         string input = File.ReadAllText(testPath);
         string correctOutput = File.ReadAllText(outPath);
 
+        if (testPath.Contains("_flaky"))
+        {
+            Assert.Inconclusive("Flaky test přeskočen");
+            return;
+        }
+
         SxScript.SxScript script = new SxScript.SxScript();
         string realOutput = script.Interpret(input);
 
