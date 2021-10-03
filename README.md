@@ -60,10 +60,10 @@ Embeddable scripting language for C# written in C#.
   - [x] unary +, -
   - [x] binary +, -, *, /, %  
   - [ ] +=, *=, /=, -=
-   - postfix
-    - [x] ++, --
-    - [ ] arrays
-    - [ ] object members   
+  - postfix  
+   - [x] ++, --
+   - [ ] arrays
+   - [ ] object members   
  - comments
   - [x] // single line
   - [ ] /* */ multiline comment. nesting won't be allowed
