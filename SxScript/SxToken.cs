@@ -36,8 +36,8 @@ namespace SxScript
         KeywordFunction,
         KeywordFor,
         KeywordIf,
-        KeywordAnd, // &&
-        KeywordOr, // ||
+        KeywordAnd, // and, &&
+        KeywordOr, // or, ||
         KeywordPrint,
         KeywordReturn,
         KeywordThis,

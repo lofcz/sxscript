@@ -29,16 +29,21 @@ public class SxParser<T>
                          | statement ;
         varDeclr       → "var"? IDENTIFIER ("=" expression)? ";"? ;                   
         statement      → exprStmt
+                         | ifStmt
                          | printStmt 
                          | block ;
+        ifStmt         → "if" "("? expression ")"? statement
+                         ( "else" statement )? ;                 
         block          → "{" declaration * "}" ;        
         printStmt      → "print" expression ";"? ;
         exprStmt       → expression ";"? ;     
         expression     → assignment ";" ;
         assignment     → IDENTIFIER "=" assignment
-                         | ternary      
-        ternary        → equality "?" expression ":" expression
-                         | equality ;
+                         | logicOr 
+                         | logicOr "?" ternary ;
+        logicOr        → logicAnd ( "or" logicAnd )* ;
+        logicAnd       → equality ( "and" equality )* ;                    
+        ternary        → expression ":" expression ;
         equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         term           → factor ( ( "-" | "+" ) factor )* ;
@@ -94,7 +99,37 @@ public class SxParser<T>
             return new SxBlockStatement(Block());
         }
 
+        if (Match(SxTokenTypes.KeywordIf))
+        {
+            return IfStmt();
+        }
+
         return ExprStmt();
+    }
+
+    SxStatement IfStmt()
+    {
+        if (Match(SxTokenTypes.LeftParen))
+        {
+            // (    
+        }
+
+        SxExpression expr = Expression();
+
+        if (Match(SxTokenTypes.RightParen))
+        {
+            // )
+        }
+
+        SxStatement thenBranch = Statement();
+        SxStatement elseBranch = null!;
+
+        if (Match(SxTokenTypes.KeywordElse))
+        {
+            elseBranch = Statement();
+        }
+
+        return new SxIfStatement(expr, thenBranch, elseBranch);
     }
 
     List<SxStatement> Block()
@@ -141,7 +176,7 @@ public class SxParser<T>
     
     SxExpression Assignment()
     {
-        SxExpression expr = Ternary();
+        SxExpression expr = LogicalOr();
         
         if (Match(SxTokenTypes.Equal))
         {
@@ -157,23 +192,49 @@ public class SxParser<T>
             // [todo] error, neplatný cíl pro přiřazení
         }
 
+        if (Match(SxTokenTypes.Question))
+        {
+            return Ternary(expr);
+        }
+
+        return expr;
+    }
+
+    SxExpression LogicalOr()
+    {
+        SxExpression expr = LogicalAnd();
+        
+        while (Match(SxTokenTypes.KeywordOr))
+        {
+            SxToken op = Previous();
+            SxExpression right = LogicalAnd();
+            expr = new SxLogicalExpression(expr, op, right);
+        }
+
+        return expr;
+    }
+
+    SxExpression LogicalAnd()
+    {
+        SxExpression expr = Equality();
+        while (Match(SxTokenTypes.KeywordAnd))
+        {
+            SxToken op = Previous();
+            SxExpression right = Equality();
+            return new SxLogicalExpression(expr, op, right);
+        }
+
         return expr;
     }
 
     // ternary → equality ? expression : expression
     // | equality
-    SxExpression Ternary()
+    SxExpression Ternary(SxExpression expr)
     {
-        SxExpression expr = Equality();
-        if (Match(SxTokenTypes.Question))
-        {
-            SxExpression caseTrue = Expression();
-            Consume(SxTokenTypes.Colon, "V ternárním operátoru chybí :");
-            SxExpression caseFalse = Expression();
-            return new SxTernaryExpression(expr, caseTrue, caseFalse);
-        }
-
-        return expr;
+        SxExpression caseTrue = Expression();
+        Consume(SxTokenTypes.Colon, "V ternárním operátoru chybí :");
+        SxExpression caseFalse = Expression();
+        return new SxTernaryExpression(expr, caseTrue, caseFalse);
     }
 
     // equality → comparison ( ( "!=" | "==" ) comparison )* ;

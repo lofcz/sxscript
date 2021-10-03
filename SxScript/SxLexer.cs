@@ -89,6 +89,23 @@ namespace SxScript
                          AddToken(SxTokenTypes.Question); break;
                      case ':':
                          AddToken(SxTokenTypes.Colon); break;
+                     case '&':
+                     {
+                         if (Match('&'))
+                         {
+                             AddToken(SxTokenTypes.KeywordAnd);
+                         }
+                         break;
+                     }
+                     case '|':
+                     {
+                         if (Match('|'))
+                         {
+                             AddToken(SxTokenTypes.KeywordOr);
+                         }
+
+                         break;
+                     }
                      case '=':
                      {
                          if (Match('='))

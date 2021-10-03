@@ -11,6 +11,7 @@ public abstract class SxExpression
       T Visit(SxTernaryExpression expr);
       T Visit(SxVarExpression expr);
       T Visit(SxAssignExpression expr);
+      T Visit(SxLogicalExpression expr);
    }
 
    public abstract T Accept<T>(ISxExpressionVisitor<T> visitor);

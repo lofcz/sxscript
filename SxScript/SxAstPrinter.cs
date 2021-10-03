@@ -40,6 +40,11 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise($"nastaveni hodnoty promenne - {expr.Name.Lexeme}", expr.Value);
     }
 
+    public string Visit(SxLogicalExpression expr)
+    {
+        return Parenthesise($"logický operátor - {expr.Operator.Lexeme}", expr.Left, expr.Right);
+    }
+
     public string Print(SxExpression expression)
     {
         return expression.Accept(this);

@@ -115,6 +115,16 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
             return bl;
         }
 
+        if (obj is int i)
+        {
+            return i > 0;
+        }
+
+        if (obj is double d)
+        {
+            return d > 0;
+        }
+
         return true;
     }
 
@@ -151,6 +161,28 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null!;
     }
 
+    public object Visit(SxLogicalExpression expr)
+    {
+        object left = Evaluate(expr.Left);
+
+        if (expr.Operator.Type == SxTokenTypes.KeywordOr)
+        {
+            if (ObjectIsTruthy(left))
+            {
+                return left;
+            }
+        }
+        else
+        {
+            if (!ObjectIsTruthy(left))
+            {
+                return left;
+            }
+        }
+
+        return Evaluate(expr.Right);
+    }
+
     public object? Evaluate(List<SxStatement> statements)
     {
         foreach (SxStatement statement in statements)
@@ -163,7 +195,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public object Evaluate(SxExpression expression)
     {
-        return expression.Accept(this);
+        return expression?.Accept(this) ?? null!;
     }
     
     public object Execute(SxStatement statement)
@@ -194,6 +226,23 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public object Visit(SxBlockStatement expr)
     {
         ExecuteBlock(expr.Statements, new SxEnvironment(Environment));
+        return null!;
+    }
+
+    public object Visit(SxIfStatement expr)
+    {
+        if (ObjectIsTruthy(Evaluate(expr.Condition)))
+        {
+            if (expr.ThenBranch != null)
+            {
+                Execute(expr.ThenBranch);   
+            }
+        }
+        else if (expr.ElseBranch != null)
+        {
+            Execute(expr.ElseBranch);
+        }
+
         return null!;
     }
 
