@@ -12,6 +12,7 @@ public abstract class SxExpression
       T Visit(SxVarExpression expr);
       T Visit(SxAssignExpression expr);
       T Visit(SxLogicalExpression expr);
+      T Visit(SxPostfixExpression expr);
    }
 
    public abstract T Accept<T>(ISxExpressionVisitor<T> visitor);

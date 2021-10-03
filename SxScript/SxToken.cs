@@ -11,7 +11,9 @@ namespace SxScript
         Comma, // ,
         Dot, // .
         Minus, // -
+        MinusMinus, // --
         Plus, // +
+        PlusPlus, // ++
         Percent, // %
         Semicolon, // ;
         Slash, // /

@@ -81,9 +81,27 @@ namespace SxScript
                      case ';':
                          AddToken(SxTokenTypes.Semicolon); break;
                      case '+':
-                         AddToken(SxTokenTypes.Plus); break;
+                     {
+                         if (Match('+'))
+                         {
+                             AddToken(SxTokenTypes.PlusPlus);
+                             break;
+                         }
+                         
+                         AddToken(SxTokenTypes.Plus); 
+                         break;
+                     }
                      case '-':
-                         AddToken(SxTokenTypes.Minus); break;
+                     {
+                         if (Match('-'))
+                         {
+                             AddToken(SxTokenTypes.MinusMinus);
+                             break;
+                         }
+                         
+                         AddToken(SxTokenTypes.Minus);
+                         break;
+                     }
                      case '*':
                          AddToken(SxTokenTypes.Star); break;
                      case '?':

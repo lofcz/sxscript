@@ -202,6 +202,55 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return Evaluate(expr.Right);
     }
 
+    public object Visit(SxPostfixExpression expr)
+    {
+        object right = Evaluate(expr.Expr);
+        object val = right;
+        
+        switch (expr.Operator.Type)
+        {
+            case SxTokenTypes.MinusMinus:
+            {
+                if (right is double dbl)
+                {
+                    dbl--;
+                    val = dbl;   
+                }
+
+                if (right is int it)
+                {
+                    it--;
+                    val = it;
+                }
+                
+                break;
+            }
+            case SxTokenTypes.PlusPlus:
+            {
+                if (right is double dbl)
+                {
+                    dbl++;
+                    val = dbl;   
+                }
+
+                if (right is int it)
+                {
+                    it++;
+                    val = it;
+                }
+                
+                break;
+            }
+        }
+
+        if (expr.Expr is SxVarExpression varExpr)
+        {
+            Environment.SetIfDefined(varExpr.Name.Lexeme, val);   
+        }
+        
+        return val;
+    }
+
     public void WriteLine(object str)
     {
         if (StdOut == null)

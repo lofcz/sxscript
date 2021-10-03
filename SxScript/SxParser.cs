@@ -63,8 +63,10 @@ public class SxParser<T>
         comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         term           → factor ( ( "-" | "+" ) factor )* ;
         factor         → unary ( ( "%" | "/" | "*" ) unary )* ;
-        unary          → ( "!" | "-" ) unary
-                       | primary ;
+        unary          → ( "!" | "-" | "+" ) unary
+                       | postfix ;
+        postfix        → ("++" | "--") postfix
+                       | primary ;               
         primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil"
                        | "(" expression ")" ;
      */
@@ -501,7 +503,20 @@ public class SxParser<T>
             return new SxUnaryExpression(op, right);
         }
         
-        return Primary();
+        return Postfix();
+    }
+
+    SxExpression Postfix()
+    {
+        SxExpression expr = Primary();
+        
+        if (Match(SxTokenTypes.PlusPlus, SxTokenTypes.MinusMinus))
+        {
+            SxToken op = Previous();
+            return new SxPostfixExpression(op, expr);
+        }
+
+        return expr;
     }
     
     // primary → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" 

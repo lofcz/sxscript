@@ -45,6 +45,11 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise($"logický operátor - {expr.Operator.Lexeme}", expr.Left, expr.Right);
     }
 
+    public string Visit(SxPostfixExpression expr)
+    {
+        return Parenthesise(expr.Operator.Lexeme, expr.Expr);
+    }
+
     public string Print(SxExpression expression)
     {
         return expression.Accept(this);
