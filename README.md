@@ -47,6 +47,7 @@ Embeddable scripting language for C# written in C#.
     - [ ] private
     - [ ] static
    - base types
+    - [ ] function 
     - [ ] class
     - [x] null / nill 
     - [x] int
