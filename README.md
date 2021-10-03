@@ -69,6 +69,7 @@ Embeddable scripting language for C# written in C#.
  - [ ] bytecode + vm
 - CLR interop
  - [ ] TBD 
+ 
 ### Notes
 - semicolons are optional
 - parenthesis around keywords are optional. Both `if (condition)` and `if condition` are valid
@@ -76,3 +77,13 @@ Embeddable scripting language for C# written in C#.
 - tabs are always discarded (no ident / dedent)
 - newlines are almost always discarded
 - dynamic type control. Optional static types. Implicit var declaration. Both `a = 0` and `var a = 0` is valid. In future `int a = 0` should be valid too.
+
+### Great projects in this area
+- https://github.com/codingseb/ExpressionEvaluator
+- https://github.com/moonsharp-devs/moonsharp/
+- https://github.com/scriban/scriban
+- https://github.com/sebastienros/fluid
+- https://github.com/sebastienros/jint
+- https://github.com/microsoft/ClearScript
+- https://github.com/munificent/craftinginterpreters (literature)
+
