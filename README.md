@@ -78,7 +78,7 @@ Embeddable scripting language for C# written in C#.
 - newlines are almost always discarded
 - dynamic type control. Optional static types. Implicit var declaration. Both `a = 0` and `var a = 0` is valid. In future `int a = 0` should be valid too.
 
-### Great projects in this area
+### Great projects I'd like to mention here
 - https://github.com/codingseb/ExpressionEvaluator
 - https://github.com/moonsharp-devs/moonsharp/
 - https://github.com/scriban/scriban
