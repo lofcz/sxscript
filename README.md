@@ -33,6 +33,7 @@ Embeddable scripting language for C# written in C#.
     - [ ] default
    - scope
     - [x] code block {}
+    - [x] global scope 
     - [x] variable shadowing
    - logical 
     - [x] and / &&
@@ -42,6 +43,7 @@ Embeddable scripting language for C# written in C#.
     - [ ] &
     - [ ] |
    - modifiers
+    - [x] await
     - [ ] async
     - [ ] public
     - [ ] private
@@ -71,8 +73,8 @@ Embeddable scripting language for C# written in C#.
 - evaluation
  - [x] interpretation
  - [ ] bytecode + vm
-- CLR interop
- - [ ] TBD 
+- FFI
+ - [x] (partially) calling FFI functions, this should support both Func<T1..T16> + Action<T1..T16> and Func<Task<T1..T16>> + Action<Task<T1..T16>>
  
 ### Notes
 - semicolons are optional
