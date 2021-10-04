@@ -4,16 +4,32 @@ public abstract class SxExpression
 {
    public interface ISxExpressionVisitor<T> 
    {
-      T Visit(SxBinaryExpression expr);
-      T Visit(SxUnaryExpression expr);
-      T Visit(SxLiteralExpression expr);
-      T Visit(SxGroupingExpression expr);
-      T Visit(SxTernaryExpression expr);
-      T Visit(SxVarExpression expr);
-      T Visit(SxAssignExpression expr);
-      T Visit(SxLogicalExpression expr);
-      T Visit(SxPostfixExpression expr);
+      Task<T> Visit(SxBinaryExpression expr);
+      Task<T> Visit(SxUnaryExpression expr);
+      Task<T> Visit(SxLiteralExpression expr);
+      Task<T> Visit(SxGroupingExpression expr);
+      Task<T> Visit(SxTernaryExpression expr);
+      Task<T> Visit(SxVarExpression expr);
+      Task<T> Visit(SxAssignExpression expr);
+      Task<T> Visit(SxLogicalExpression expr);
+      Task<T> Visit(SxPostfixExpression expr);
+      Task<T> Visit(SxCallExpression expr);
+   }
+   
+   public interface ISxCallable
+   {
+      object? Call(SxInterpreter interpreter, List<object> arguments);
+   }
+   
+   public interface ISxAsyncCallable : ISxAwaitableExpression
+   {
+      Task<object?> CallAsync(SxInterpreter interpreter, List<object> arguments);
+   }
+   
+   public interface ISxAwaitableExpression
+   {
+      public bool Await { get; set; }
    }
 
-   public abstract T Accept<T>(ISxExpressionVisitor<T> visitor);
+   public abstract Task<T> Accept<T>(ISxExpressionVisitor<T> visitor);
 }

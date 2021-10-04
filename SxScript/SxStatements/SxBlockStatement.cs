@@ -6,9 +6,9 @@ public class SxBlockStatement : SxStatement, SxStatement.ISxBreakableStatement
     public bool Break { get; set; }
     public bool Continue { get; set; }
     
-    public override T Accept<T>(ISxStatementVisitor<T> visitor)
+    public override async Task<object> Accept<T>(ISxStatementVisitor<T> visitor)
     {
-        return visitor.Visit(this);
+        return await visitor.Visit(this);
     }
 
     public SxBlockStatement(List<SxStatement> statements)

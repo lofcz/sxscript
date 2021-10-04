@@ -5,9 +5,9 @@ public class SxLabelStatement : SxStatement
     public SxToken Identifier { get; set; }
     public SxStatement Statement { get; set; }
     
-    public override T Accept<T>(ISxStatementVisitor<T> visitor)
+    public override async Task<object> Accept<T>(ISxStatementVisitor<T> visitor)
     {
-        return visitor.Visit(this);
+        return await visitor.Visit(this);
     }
 
     public SxLabelStatement(SxToken identifier, SxStatement statement)

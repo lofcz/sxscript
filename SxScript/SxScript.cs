@@ -5,7 +5,7 @@ namespace SxScript;
 
 public class SxScript
 {
-    public string Interpret(string code)
+    public async Task<string> Interpret(string code)
     {
         StringBuilder stdOut = new StringBuilder();
         

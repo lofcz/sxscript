@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading.Tasks;
 using NUnit.Framework;
 namespace SxScriptTests;
 
@@ -10,11 +11,11 @@ public class SxTestRunner
     }
 
     [Test, TestCaseSource(nameof(GetTestCases))]
-    public void Test1(string testPath)
+    public async Task Test1(string testPath)
     {
         string outPath = testPath.Replace("/Programs/In", "/Programs/Out");
-        string input = File.ReadAllText(testPath);
-        string correctOutput = File.ReadAllText(outPath);
+        string input = await File.ReadAllTextAsync(testPath);
+        string correctOutput = await File.ReadAllTextAsync(outPath);
 
         if (testPath.Contains("_flaky"))
         {
@@ -23,7 +24,7 @@ public class SxTestRunner
         }
 
         SxScript.SxScript script = new SxScript.SxScript();
-        string realOutput = script.Interpret(input);
+        string realOutput = await script.Interpret(input);
 
         bool correct = correctOutput.Replace("\r\n", "\n").Trim() == realOutput.Replace("\r\n", "\n").Trim();
         if (!correct)

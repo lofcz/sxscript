@@ -2,8 +2,8 @@ namespace SxScript.SxStatements;
 
 public class SxContinueStatement : SxStatement
 {
-    public override T Accept<T>(ISxStatementVisitor<T> visitor)
+    public override async Task<object> Accept<T>(ISxStatementVisitor<T> visitor)
     {
-        return visitor.Visit(this);
+        return await visitor.Visit(this);
     }
 }

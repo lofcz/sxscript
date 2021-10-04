@@ -6,9 +6,9 @@ public class SxIfStatement : SxStatement
     public SxStatement? ThenBranch { get; set; }
     public SxStatement? ElseBranch { get; set; }
     
-    public override T Accept<T>(ISxStatementVisitor<T> visitor)
+    public override async Task<object> Accept<T>(ISxStatementVisitor<T> visitor)
     {
-        return visitor.Visit(this);
+        return await visitor.Visit(this);
     }
 
     public SxIfStatement(SxExpression condition, SxStatement thenBranch, SxStatement elseBranch)

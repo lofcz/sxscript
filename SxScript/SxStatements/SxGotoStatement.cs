@@ -9,8 +9,8 @@ public class SxGotoStatement : SxStatement
         Identifier = identifier;
     }
     
-    public override T Accept<T>(ISxStatementVisitor<T> visitor)
+    public override async Task<object> Accept<T>(ISxStatementVisitor<T> visitor)
     {
-        return visitor.Visit(this);
+        return await visitor.Visit(this);
     }
 }

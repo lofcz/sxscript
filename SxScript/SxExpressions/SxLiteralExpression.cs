@@ -10,8 +10,8 @@ public class SxLiteralExpression : SxExpression
         Value = value;
     }
 
-    public override T Accept<T>(ISxExpressionVisitor<T> visitor)
+    public override async Task<T> Accept<T>(ISxExpressionVisitor<T> visitor)
     {
-        return visitor.Visit(this);
+        return await visitor.Visit(this);
     }
 }

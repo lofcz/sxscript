@@ -50,6 +50,8 @@ namespace SxScript
         KeywordBreak,
         KeywordContinue,
         KeywordGoto,
+        KeywordAsync,
+        KeywordAwait,
         Eof
     }
     

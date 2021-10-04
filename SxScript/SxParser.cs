@@ -65,8 +65,11 @@ public class SxParser<T>
         factor         → unary ( ( "%" | "/" | "*" ) unary )* ;
         unary          → ( "!" | "-" | "+" ) unary
                        | postfix ;
-        postfix        → ("++" | "--") postfix
-                       | primary ;               
+        postfix        → call
+                       | ("++" | "--") primary
+                       | primary ;
+        call           → "await"? primary ( "(" arguments? ")" )*                                
+        arguments      → expression ("," expression )* ;               
         primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil"
                        | "(" expression ")" ;
      */
@@ -508,7 +511,7 @@ public class SxParser<T>
 
     SxExpression Postfix()
     {
-        SxExpression expr = Primary();
+        SxExpression expr = Call();
         
         if (Match(SxTokenTypes.PlusPlus, SxTokenTypes.MinusMinus))
         {
@@ -517,6 +520,46 @@ public class SxParser<T>
         }
 
         return expr;
+    }
+
+    SxExpression Call()
+    {
+        bool awaitCall = Match(SxTokenTypes.KeywordAwait);
+        SxExpression expr = Primary();
+
+        while (true)
+        {
+            if (Match(SxTokenTypes.LeftParen))
+            {
+                expr = ResolveCall(expr);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (expr is SxExpression.ISxAwaitableExpression awaitable)
+        {
+            awaitable.Await = awaitCall;
+        }
+        
+        return expr;
+    }
+
+    SxExpression ResolveCall(SxExpression callee)
+    {
+        List<SxExpression> arguments = new List<SxExpression>();
+        if (!Check(SxTokenTypes.RightParen))
+        {
+            do
+            {
+                arguments.Add(Expression());
+            } while (Match(SxTokenTypes.Comma));
+        }
+
+        SxToken paren = Consume(SxTokenTypes.RightParen, "Očekávána )");
+        return new SxCallExpression(callee, paren, arguments);
     }
     
     // primary → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" 

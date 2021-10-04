@@ -4,17 +4,17 @@ public abstract class SxStatement
 {
     public interface ISxStatementVisitor<T> 
     {
-        T Visit(SxExpressionStatement expr);
-        T Visit(SxPrintStatement expr);
-        T Visit(SxVarStatement expr);
-        T Visit(SxBlockStatement expr);
-        T Visit(SxIfStatement expr);
-        T Visit(SxWhileStatement expr);
-        T Visit(SxBreakStatement expr);
-        T Visit(SxLabelStatement expr);
-        T Visit(SxGotoStatement expr);
-        T Visit(SxForStatement expr);
-        T Visit(SxContinueStatement expr);
+        Task<T> Visit(SxExpressionStatement expr);
+        Task<object> Visit(SxPrintStatement expr);
+        Task<T> Visit(SxVarStatement expr);
+        Task<T> Visit(SxBlockStatement expr);
+        Task<T> Visit(SxIfStatement expr);
+        Task<T> Visit(SxWhileStatement expr);
+        Task<T> Visit(SxBreakStatement expr);
+        Task<T> Visit(SxLabelStatement expr);
+        Task<T> Visit(SxGotoStatement expr);
+        Task<T> Visit(SxForStatement expr);
+        Task<T> Visit(SxContinueStatement expr);
     }
     
     public interface ISxBreakableStatement
@@ -29,5 +29,5 @@ public abstract class SxStatement
     }
     
     public SxExpression Expr { get; set; }
-    public abstract T Accept<T>(ISxStatementVisitor<T> visitor);
+    public abstract Task<object> Accept<T>(ISxStatementVisitor<T> visitor);
 }

@@ -1,12 +1,14 @@
 using System.Text;
 using SxScript.Exceptions;
+using SxScript.SxFFI;
 using SxScript.SxStatements;
 
 namespace SxScript;
 
 public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatement.ISxStatementVisitor<object>
 {
-    public SxEnvironment Environment = new SxEnvironment(null);
+    public SxEnvironment Globals = new SxEnvironment(null);
+    public SxEnvironment Environment;
     public SortedList<int, SxStatement> AllStatements = new SortedList<int, SxStatement>();
     public Dictionary<string, SxLabelStatement> Labels = new Dictionary<string, SxLabelStatement>();
     public SxStatement CurrentStatement = null;
@@ -19,10 +21,24 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public Stack<SxStatement> LoopStack = new Stack<SxStatement>();
     public SxStatement.ISxLoopingStatement CurrentLoopStatement = null;
 
-    public object? Visit(SxBinaryExpression expr)
+    public SxInterpreter()
     {
-        object right = Evaluate(expr.Right);
-        object left = Evaluate(expr.Left);
+        Environment = Globals;
+        Globals.SetIfDefined("clock", new SxNativeFunction<DateTime>(() =>
+        {
+            return DateTime.Now;
+        }));
+        
+        Globals.SetIfDefined("async_clock", new SxNativeAsyncFunction<DateTime>(async () =>
+        {
+            return await Task.Run(() => DateTime.Now);
+        }));
+    }
+    
+    public async Task<object?> Visit(SxBinaryExpression expr)
+    {
+        object right = await EvaluateAsync(expr.Right);
+        object left = await EvaluateAsync(expr.Left);
 
         if ((right is string rightStr || left is string leftStr) && expr.Operator.Type == SxTokenTypes.Plus)
         {
@@ -33,9 +49,9 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return val;
     }
 
-    public object Visit(SxUnaryExpression expr)
+    public async Task<object> Visit(SxUnaryExpression expr)
     {
-        object right = Evaluate(expr.Expr);
+        object right = await EvaluateAsync(expr.Expr);
         switch (expr.Operator.Type)
         {
             case SxTokenTypes.Minus:
@@ -147,42 +163,42 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return true;
     }
 
-    public object Visit(SxLiteralExpression expr)
+    public async Task<object> Visit(SxLiteralExpression expr)
     {
         return expr.Value;
     }
 
-    public object Visit(SxGroupingExpression expr)
+    public async Task<object> Visit(SxGroupingExpression expr)
     {
-        return Evaluate(expr.Expr);
+        return await EvaluateAsync(expr.Expr);
     }
 
     // expr ? caseTrue : caseFalse
-    public object Visit(SxTernaryExpression expr)
+    public async Task<object> Visit(SxTernaryExpression expr)
     {
-        object iff = Evaluate(expr.Expr);
+        object iff = await EvaluateAsync(expr.Expr);
         if (iff is bool bl)
         {
-            return Evaluate(bl ? expr.CaseTrue : expr.CaseFalse);
+            return await EvaluateAsync(bl ? expr.CaseTrue : expr.CaseFalse);
         }
 
-        return Evaluate(expr.CaseTrue);
+        return await EvaluateAsync(expr.CaseTrue);
     }
     
-    public object Visit(SxVarExpression expr)
+    public async Task<object> Visit(SxVarExpression expr)
     {
         return (Environment.Get(expr.Name.Lexeme) ?? null)!;
     }
 
-    public object Visit(SxAssignExpression expr)
+    public async Task<object> Visit(SxAssignExpression expr)
     {
-        Environment.SetIfDefined(expr.Name.Lexeme, Evaluate(expr.Value));
+        Environment.SetIfDefined(expr.Name.Lexeme, await EvaluateAsync(expr.Value));
         return null!;
     }
 
-    public object Visit(SxLogicalExpression expr)
+    public async Task<object> Visit(SxLogicalExpression expr)
     {
-        object left = Evaluate(expr.Left);
+        object left = await EvaluateAsync(expr.Left);
 
         if (expr.Operator.Type == SxTokenTypes.KeywordOr)
         {
@@ -199,12 +215,12 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
             }
         }
 
-        return Evaluate(expr.Right);
+        return await EvaluateAsync(expr.Right);
     }
 
-    public object Visit(SxPostfixExpression expr)
+    public async Task<object> Visit(SxPostfixExpression expr)
     {
-        object right = Evaluate(expr.Expr);
+        object right = await EvaluateAsync(expr.Expr);
         object val = right;
         
         switch (expr.Operator.Type)
@@ -251,6 +267,29 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return val;
     }
 
+    public async Task<object?> Visit(SxCallExpression expr)
+    {
+        object callee = await EvaluateAsync(expr.Callee);
+        List<object> arguments = new List<object>();
+
+        foreach (SxExpression argument in expr.Arguments)
+        {
+            arguments.Add(await EvaluateAsync(argument));
+        }
+
+        if (callee is SxExpression.ISxCallable fn)
+        {
+            return fn.Call(this, arguments);
+        }
+        
+        if (callee is SxExpression.ISxAsyncCallable asyncFn)
+        {
+            return expr.Await ? await asyncFn.CallAsync(this, arguments) : asyncFn.CallAsync(this, arguments);
+        }
+
+        return null!;
+    }
+
     public void WriteLine(object str)
     {
         if (StdOut == null)
@@ -263,7 +302,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         }
     }
 
-    public object? Evaluate(List<SxStatement> statements, StringBuilder stdout = null, StringBuilder stdin = null)
+    public async Task<object?> Evaluate(List<SxStatement> statements, StringBuilder stdout = null, StringBuilder stdin = null)
     {
         AllStatements = new SortedList<int, SxStatement>();
         for (int i = 0; i < statements.Count; i++)
@@ -277,7 +316,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         for (CurrentStatementIndex = 0; CurrentStatementIndex < statements.Count; CurrentStatementIndex++)
         {
             SxStatement statement = statements[CurrentStatementIndex];
-            object statementResult = Execute(statement);
+            object statementResult = await ExecuteAsync(statement);
 
             if (Jump)
             {
@@ -305,61 +344,71 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return expression?.Accept(this) ?? null!;
     }
     
+    public async Task<object> EvaluateAsync(SxExpression expression)
+    {
+        return await expression?.Accept(this)! ?? null!;
+    }
+    
     public object Execute(SxStatement statement)
     {
         return statement.Accept(this);
     }
-
-    public object Visit(SxExpressionStatement expr)
+    
+    public async Task<object> ExecuteAsync(SxStatement statement)
     {
-        Evaluate(expr.Expr);
+        return await statement.Accept(this);
+    }
+
+    public async Task<object> Visit(SxExpressionStatement expr)
+    {
+        await EvaluateAsync(expr.Expr);
         return null!;
     }
 
-    public object Visit(SxPrintStatement expr)
+    public async Task<object> Visit(SxPrintStatement expr)
     {
-        object val = Evaluate(expr.Expr);
+        object val = await EvaluateAsync(expr.Expr);
         WriteLine(val);
         return null!;
     }
 
-    public object Visit(SxVarStatement expr)
+    public async Task<object> Visit(SxVarStatement expr)
     {
-        object val = Evaluate(expr.Expr);
+        object val = await EvaluateAsync(expr.Expr);
         Environment.Set(expr.Name.Lexeme, val);
         return null!;
     }
 
-    public object Visit(SxBlockStatement expr)
+    public async Task<object> Visit(SxBlockStatement expr)
     {
-        ExecuteBlock(expr, expr.Statements, new SxEnvironment(Environment));
+        await ExecuteBlockAsync(expr, expr.Statements, new SxEnvironment(Environment));
         return null!;
     }
 
-    public object Visit(SxIfStatement expr)
+    public async Task<object> Visit(SxIfStatement expr)
     {
-        if (ObjectIsTruthy(Evaluate(expr.Condition)))
+        if (ObjectIsTruthy(await EvaluateAsync(expr.Condition)))
         {
             if (expr.ThenBranch != null)
             {
-                Execute(expr.ThenBranch);   
+                await ExecuteAsync(expr.ThenBranch);   
             }
         }
         else if (expr.ElseBranch != null)
         {
-            Execute(expr.ElseBranch);
+            await ExecuteAsync(expr.ElseBranch);
         }
 
         return null!;
     }
 
-    public object Visit(SxWhileStatement expr)
+    public async Task<object> Visit(SxWhileStatement expr)
     {
         LoopDepth++;
         LoopStack.Push(expr.Statement);
         CurrentLoopStatement = expr;
         
-        while (ObjectIsTruthy(Evaluate(expr.Expr)))
+        while (ObjectIsTruthy(await EvaluateAsync(expr.Expr)))
         {
             if (expr.Continue)
             {
@@ -373,7 +422,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 break;
             }
             
-            Execute(expr.Statement);
+            await ExecuteAsync(expr.Statement);
         }
 
         LoopStack.Pop();
@@ -381,7 +430,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null!;
     }
 
-    public object Visit(SxBreakStatement expr)
+    public async Task<object> Visit(SxBreakStatement expr)
     {
         CurrentLoopStatement.Break = true;
         if (CurrentLoopStatement.Statement is SxStatement.ISxBreakableStatement breakableStatement)
@@ -392,7 +441,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null!;
     }
     
-    public object Visit(SxContinueStatement expr)
+    public async Task<object> Visit(SxContinueStatement expr)
     {
         CurrentLoopStatement.Continue = true;
         if (CurrentLoopStatement.Statement is SxStatement.ISxBreakableStatement breakableStatement)
@@ -403,33 +452,33 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null!;
     }
 
-    public object Visit(SxLabelStatement expr)
+    public async Task<object> Visit(SxLabelStatement expr)
     {
         if (!Labels.TryGetValue(expr.Identifier.Lexeme, out _))
         {
             Labels.Add(expr.Identifier.Lexeme, expr);   
         }
         
-        Execute(expr.Statement);
+        await ExecuteAsync(expr.Statement);
         return null!;
     }
 
-    public object Visit(SxGotoStatement expr)
+    public async Task<object> Visit(SxGotoStatement expr)
     {
         Jump = true;
         JumpDestination = expr.Identifier;
         return null!;
     }
 
-    public object Visit(SxForStatement expr)
+    public async Task<object> Visit(SxForStatement expr)
     {
         LoopDepth++;
         LoopStack.Push(expr.Statement);
         CurrentLoopStatement = expr;
         
-        Execute(expr.Initializer);
+        await ExecuteAsync(expr.Initializer);
 
-        while (ObjectIsTruthy(Evaluate(expr.Condition)))
+        while (ObjectIsTruthy(await EvaluateAsync(expr.Condition)))
         {
             if (expr.Continue)
             {
@@ -443,8 +492,8 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 break;
             }
             
-            Execute(expr.Statement);
-            Evaluate(expr.Increment);
+            await ExecuteAsync(expr.Statement);
+            await EvaluateAsync(expr.Increment);
         }
 
         LoopStack.Pop();
@@ -459,6 +508,25 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         foreach (SxStatement statement in statements)
         {
             Execute(statement);
+            
+            if (blockStatement.Break || blockStatement.Continue)
+            {
+                blockStatement.Break = false;
+                blockStatement.Continue = false;
+                break;
+            }
+        }
+
+        Environment = previous;
+    }
+    
+    async Task ExecuteBlockAsync(SxBlockStatement blockStatement, List<SxStatement> statements, SxEnvironment environment)
+    {
+        SxEnvironment previous = Environment;
+        Environment = environment;
+        foreach (SxStatement statement in statements)
+        {
+            await ExecuteAsync(statement);
             
             if (blockStatement.Break || blockStatement.Continue)
             {
