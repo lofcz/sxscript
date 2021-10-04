@@ -84,6 +84,7 @@ Embeddable scripting language for C# written in C#.
 - newlines are almost always discarded
 - dynamic type control. Optional static types. Implicit var declaration. Both `a = 0` and `var a = 0` is valid. In future `int a = 0` should be valid too.
 - SxScript is as permissive as possible. Aborting execution is always considered the last option. This is probably not a very good design but I love languages with this behavior (Lua).
+- exceptions are not used to control flow (return, continue, break..)
 
 ### Great projects I'd like to mention here
 - https://github.com/codingseb/ExpressionEvaluator
