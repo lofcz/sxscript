@@ -20,7 +20,7 @@ function fib(n) {
   return fib(n - 2) + fib(n - 1);
 }
 
-for (var i = 0; i < 10; i = i + 1) {
+for (var i = 0; i < 10; i++) {
   print fib(i);
 }
 
