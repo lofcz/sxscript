@@ -30,7 +30,7 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
 
 ### Goals of this project are (in order of priority, desc)  
 - good test coverage
-- support both adhoc evaluation and il bytecode
+- support both adhoc evaluation and il bytecode + vm
 - high IO throughput via async/await
 - safe by default, require explicit whitelisting of CLR interop
 - allow limitation of execution time, memory used, intructions executed, recursion depth, enumerables length, iterations in looping statements
