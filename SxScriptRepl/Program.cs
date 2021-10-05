@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using SxScript;
 using SxScript.SxStatements;
 
-namespace SxScript
+namespace SxScriptRepl
 {
     public class Program
     {

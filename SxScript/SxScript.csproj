@@ -1,10 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Authors>Matěj "lof" Štágl</Authors>
+        <Description>Embeddable scripting language for C#. WIP. Goals: async/await, il bytecode, safe by default, performance.</Description>
+        <PackageProjectUrl>https://github.com/lofcz/sxscript</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/lofcz/sxscript</RepositoryUrl>
+        <PublicSign>false</PublicSign>
     </PropertyGroup>
 
 </Project>

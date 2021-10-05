@@ -36,3 +36,5 @@ SxScript/bin
 SxScriptTests/obj
 SxScriptTests/bin
 SxScript.sln.DotSettings.user
+SxScriptRepl/obj
+SxScriptRepl/bin
