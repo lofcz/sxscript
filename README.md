@@ -13,7 +13,7 @@ SxScript.SxScript script = new SxScript.SxScript();
 string stdout = await script.Interpret("print \"hello world\"");
 ```
 
-First 10 Fibonnaci numbers, recursive:
+First 10 Fibonacci numbers, recursive:
 ```csharp
 function fib(n) {
   if (n <= 1) return n;
