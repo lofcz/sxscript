@@ -1,6 +1,32 @@
+![nuget](https://img.shields.io/nuget/v/SxScript)
+
 # SxScript
 
 Embeddable scripting language for C# written in C#.  
+
+```
+Install-Package SxScript
+```
+Hello world:
+```csharp
+SxScript.SxScript script = new SxScript.SxScript();
+string stdout = await script.Interpret("print \"hello world\"");
+```
+
+First 10 Fibonnaci numbers, recursive:
+```csharp
+function fib(n) {
+  if (n <= 1) return n;
+  return fib(n - 2) + fib(n - 1);
+}
+
+for (var i = 0; i < 10; i = i + 1) {
+  print fib(i);
+}
+
+// result: 0 1 1 2 3 5 8 13 21 34
+```
+Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for more programs.
 
 ### Goals of this project are (in order of priority, desc)  
 - good test coverage
