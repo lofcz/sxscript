@@ -124,6 +124,12 @@
       <None Update="Programs\Out\Benchmarks\fib_recursive.sx">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="Programs\In\Benchmarks\pi_recursive.sx">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Programs\Out\Benchmarks\pi_recursive.sx">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

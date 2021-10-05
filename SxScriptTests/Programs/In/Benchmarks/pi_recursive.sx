@@ -1,0 +1,13 @@
+steps = 0;
+PI = 0;
+
+function F(i) {
+    steps++;
+    if (steps >= 100) {
+        return PI;
+    }
+    return 1 + i / (2.0 * i + 1) * F(i + 1);
+}
+
+PI = 2 * F(1);
+print PI
