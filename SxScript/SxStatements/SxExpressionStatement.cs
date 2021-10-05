@@ -7,7 +7,7 @@ public class SxExpressionStatement : SxStatement
         Expr = expression;
     }
     
-    public override async Task<object> Accept<T>(ISxStatementVisitor<T> visitor)
+    public override async Task<object?> Accept<T>(ISxStatementVisitor<T> visitor)
     {
         return await visitor.Visit(this);
     }

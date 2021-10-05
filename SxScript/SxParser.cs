@@ -28,7 +28,12 @@ public class SxParser<T>
     /*
         parse          → declaration * EOF ;
         declaration    → varDeclr
+                         | funDeclr
                          | statement ;
+        funDeclr       → (modifier)?* ("fn" | "func" | "function") function ;
+        modifier       → "async" ;
+        function       → IDENTIFIER "(" parameters? ")" block ;
+        parameters     → IDENTIFIER ( "," IDENTIFIER )* ;                 
         varDeclr       → "var"? IDENTIFIER ("=" expression)? ";"? ;                   
         statement      → exprStmt
                          | ifStmt
@@ -39,7 +44,9 @@ public class SxParser<T>
                          | printStmt
                          | breakStmt
                          | continueStmt 
+                         | returnStmt
                          | block ;
+        returnStmt     → ("return" | "ret") expression? ";"? ;                
         breakStmt      → "break" ";"? ;
         continueStmt   → "continue" ";"? ;
         gotoStmt       → "goto" IDENTIFIER ";"? ;   
@@ -81,12 +88,39 @@ public class SxParser<T>
             return VarDeclr();
         }
 
-        /*if (Check(SxTokenTypes.Identifier) && CheckNth(1, SxTokenTypes.Equal))
+        if (Match(SxTokenTypes.KeywordFunction))
         {
-            return VarDeclr();
-        }*/
+            return FunDeclr("funkce");
+        }
 
         return Statement();
+    }
+
+    SxStatement FunDeclr(string kind)
+    {
+        if (Match(SxTokenTypes.KeywordAsync))
+        {
+            // async
+        }
+
+        SxToken name = Consume(SxTokenTypes.Identifier, $"Očekáván název {kind}");
+        Consume(SxTokenTypes.LeftParen, "Očekávána ( za deklarací signatury funkce");
+        List<SxToken> pars = new List<SxToken>();
+
+        if (!Check(SxTokenTypes.RightParen))
+        {
+            do
+            {
+                SxToken par = Consume(SxTokenTypes.Identifier, "Očekáván název parametru");
+                pars.Add(par);
+            } while (Match(SxTokenTypes.Comma));
+        }
+
+        Consume(SxTokenTypes.RightParen, "Očekávána ) na konci deklarace signatury funkce");
+        Consume(SxTokenTypes.LeftBrace, "Očekávána { na začátku deklarace obsahu funkce");
+        List<SxStatement> body = Block();
+
+        return new SxFunctionStatement(name, pars, body);
     }
 
     SxStatement VarDeclr()
@@ -154,7 +188,30 @@ public class SxParser<T>
             return GotoStmt();
         }
 
+        if (Match(SxTokenTypes.KeywordReturn))
+        {
+            return ReturnStmt();
+        }
+
         return ExprStmt();
+    }
+
+    SxStatement ReturnStmt()
+    {
+        SxToken previous = Previous();
+        SxExpression val = null!;
+
+        if (!Check(SxTokenTypes.Semicolon) && !Check(SxTokenTypes.RightBrace))
+        {
+            val = Expression();
+        }
+
+        if (Match(SxTokenTypes.Semicolon))
+        {
+            // ;
+        }
+
+        return new SxReturnStatement(previous, val);
     }
 
     SxStatement GotoStmt()

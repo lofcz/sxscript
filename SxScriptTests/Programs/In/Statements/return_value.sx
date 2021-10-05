@@ -1,0 +1,6 @@
+function test(n) {
+  return n;
+}
+
+print test(10)
+print test("hello")

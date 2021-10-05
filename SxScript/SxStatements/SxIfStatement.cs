@@ -6,7 +6,7 @@ public class SxIfStatement : SxStatement
     public SxStatement? ThenBranch { get; set; }
     public SxStatement? ElseBranch { get; set; }
     
-    public override async Task<object> Accept<T>(ISxStatementVisitor<T> visitor)
+    public override async Task<object?> Accept<T>(ISxStatementVisitor<T> visitor)
     {
         return await visitor.Visit(this);
     }

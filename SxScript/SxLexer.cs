@@ -11,7 +11,7 @@ namespace SxScript
         public Dictionary<string, SxTokenTypes> Keywords = new Dictionary<string, SxTokenTypes>()
         {
             {"and", SxTokenTypes.KeywordAnd}, {"class", SxTokenTypes.KeywordClass}, {"else", SxTokenTypes.KeywordElse},
-            {"false", SxTokenTypes.False}, {"for", SxTokenTypes.KeywordFor}, {"fn", SxTokenTypes.KeywordFunction}, 
+            {"false", SxTokenTypes.False}, {"for", SxTokenTypes.KeywordFor}, {"fn", SxTokenTypes.KeywordFunction}, {"fun", SxTokenTypes.KeywordFunction},
             {"func", SxTokenTypes.KeywordFunction}, {"function", SxTokenTypes.KeywordFunction}, {"if", SxTokenTypes.KeywordIf},
             {"null", SxTokenTypes.Nill}, {"nill", SxTokenTypes.Nill}, {"or", SxTokenTypes.KeywordOr}, {"print", SxTokenTypes.KeywordPrint},
             {"return", SxTokenTypes.KeywordReturn}, {"super", SxTokenTypes.KeywordSuper}, {"this", SxTokenTypes.KeywordThis}, {"true", SxTokenTypes.True},

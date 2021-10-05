@@ -40,6 +40,23 @@ public class SxEnvironment
 
         Enclosing?.SetIfDefined(name, value);
     }
+    
+    public void SetIfDefinedToSelf(string name, object? value = null)
+    {
+        if (Variables.ContainsKey(name))
+        {
+            Variables[name] = value;
+            return;
+        }
+
+        if (Enclosing == null)
+        {
+            // [todo] pokus o nastavení nedefinované proměnné
+            Set(name, value);
+        }
+
+        Enclosing?.SetIfDefined(name, value);
+    }
 
     public object? Get(string name)
     {

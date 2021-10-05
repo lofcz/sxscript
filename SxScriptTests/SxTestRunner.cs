@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -23,8 +24,10 @@ public class SxTestRunner
             return;
         }
 
+        Stopwatch sw = Stopwatch.StartNew();
         SxScript.SxScript script = new SxScript.SxScript();
         string realOutput = await script.Interpret(input);
+        sw.Stop();
 
         bool correct = correctOutput.Replace("\r\n", "\n").Trim() == realOutput.Replace("\r\n", "\n").Trim();
         if (!correct)
@@ -33,6 +36,6 @@ public class SxTestRunner
             return;
         }
 
-        Assert.Pass($"Test prošel\nnázev: {testPath}\n---------\nvstup:\n{input}\n----------\nočekávaný výstup:\n{correctOutput}\n------------\nskutečný výstup:\n{realOutput}");
+        Assert.Pass($"Test prošel\nnázev: {testPath}\nčas:\n{sw.Elapsed}\n---------\nvstup:\n{input}\n----------\nočekávaný výstup:\n{correctOutput}\n------------\nskutečný výstup:\n{realOutput}");
     }
 }

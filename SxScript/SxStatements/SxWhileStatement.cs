@@ -14,7 +14,7 @@ public class SxWhileStatement : SxStatement, SxStatement.ISxLoopingStatement
         Continue = false;
     }
     
-    public override async Task<object> Accept<T>(ISxStatementVisitor<T> visitor)
+    public override async Task<object?> Accept<T>(ISxStatementVisitor<T> visitor)
     {
         return await visitor.Visit(this);
     }
