@@ -26,7 +26,7 @@ Embeddable scripting language for C# written in C#.
     - [x] goto
     - [x] break
     - [x] continue
-    - [ ] return
+    - [x] return
    - labeled
     - [x] label
     - [ ] case
@@ -49,15 +49,18 @@ Embeddable scripting language for C# written in C#.
     - [ ] private
     - [ ] static
    - base types
-    - [ ] function 
-    - [ ] class
+    - [x] function 
     - [x] null / nill 
     - [x] int
     - [x] double
     - [x] string
     - [x] bool
     - [x] object
-    - [x] true, false   
+    - [x] true, false
+    - [ ] class
+    - [ ] array
+    - [ ] dictionary
+    - [ ] list   
  - operators
   - [x] assignment
   - [x] unary +, -
@@ -74,7 +77,12 @@ Embeddable scripting language for C# written in C#.
  - [x] interpretation
  - [ ] bytecode + vm
 - FFI
- - [x] (partially) calling FFI functions, this should support both Func<T1..T16> + Action<T1..T16> and Func<Task<T1..T16>> + Action<Task<T1..T16>>
+ - [x] (partially) calling FFI functions, this should support both `Func<T1..T16>` + `Action<T1..T16>` and `Func<Task<T1..T16>>` + `Action<Task<T1..T16>>`
+- sugar
+ - [ ] default parameter values `fn sum(a = 1, b = 2) {}`
+ - [ ] parameter by name `myFn(myParam: 1)`
+- misc
+ - [ ] params `fn sum(params numbers)` 
  
 ### Notes
 - semicolons are optional
