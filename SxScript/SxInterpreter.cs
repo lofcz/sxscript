@@ -284,11 +284,26 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         }
         
         object? toRet = null!;
-        List<object> arguments = new List<object>();
+        List<SxResolvedCallArgument> arguments = new List<SxResolvedCallArgument>();
 
-        foreach (SxExpression argument in expr.Arguments)
+        foreach (SxCallArgument argument in expr.Arguments)
         {
-            arguments.Add(await EvaluateAsync(argument));
+            object? argVal = await EvaluateAsync(argument.Value);
+            string? argName = null;
+
+            if (argument.Name != null)
+            {
+                if (argument.Name is SxVarExpression sxVar)
+                {
+                    argName = sxVar.Name.Lexeme;
+                }
+                else
+                {
+                    argName = (await EvaluateAsync(argument.Name))?.ToString() ?? null;   
+                }
+            }
+            
+            arguments.Add(new SxResolvedCallArgument(argVal, argName));
         }
         
         if (callee is SxExpression.ISxCallable fn)

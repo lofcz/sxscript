@@ -6,11 +6,11 @@ public class SxCallExpression : SxExpression, SxExpression.ISxAwaitableExpressio
 {
     public SxExpression Callee { get; set; }
     public SxToken Paren { get; set; }
-    public List<SxExpression> Arguments { get; set; }
+    public List<SxCallArgument> Arguments { get; set; }
     public bool Await { get; set; }
     public bool Return { get; set; }
 
-    public SxCallExpression(SxExpression callee, SxToken paren, List<SxExpression> arguments)
+    public SxCallExpression(SxExpression callee, SxToken paren, List<SxCallArgument> arguments)
     {
         Callee = callee;
         Paren = paren;
@@ -24,3 +24,28 @@ public class SxCallExpression : SxExpression, SxExpression.ISxAwaitableExpressio
         return await visitor.Visit(this);
     }
 }
+
+public class SxCallArgument
+{
+    public SxExpression Value { get; set; }
+    public SxExpression? Name { get; set; }
+
+    public SxCallArgument(SxExpression value, SxExpression name)
+    {
+        Value = value;
+        Name = name;
+    }
+}
+
+public class SxResolvedCallArgument
+{
+    public string? Name { get; set; }
+    public object? Value { get; set; }
+
+    public SxResolvedCallArgument(object? value, string? name)
+    {
+        Value = value;
+        Name = name;
+    }
+}
+

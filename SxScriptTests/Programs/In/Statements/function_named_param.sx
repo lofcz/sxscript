@@ -1,0 +1,9 @@
+fn myFn(a, b, c) {
+  if (a != null) {print a;}
+  if (b != null) {print b;}
+  if (c != null) {print c;}
+}
+
+myFn("1", "2", "3")
+myFn(c: "a", b: "b", a: "c")
+myFn(c: "c3")

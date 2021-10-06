@@ -76,7 +76,7 @@ public class SxParser<T>
                        | ("++" | "--") primary
                        | primary ;
         call           → "await"? primary ( "(" arguments? ")" )*                                
-        arguments      → expression ("," expression ("=" expression)? )* ;               
+        arguments      → (expression ":")? expression ("," (expression ":")? expression ("=" expression)? )* ;               
         primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil"
                        | "(" expression ")" ;
      */
@@ -615,12 +615,23 @@ public class SxParser<T>
 
     SxExpression Arguments(SxExpression callee)
     {
-        List<SxExpression> arguments = new List<SxExpression>();
+        List<SxCallArgument> arguments = new List<SxCallArgument>();
         if (!Check(SxTokenTypes.RightParen))
         {
             do
             {
-                arguments.Add(Expression());
+                SxExpression expression = Expression();
+
+                if (Match(SxTokenTypes.Colon))
+                {
+                    SxExpression val = Expression();
+                    arguments.Add(new SxCallArgument(val, expression));
+                }
+                else
+                {
+                    arguments.Add(new SxCallArgument(expression, null!));
+                }
+                
             } while (Match(SxTokenTypes.Comma));
         }
 

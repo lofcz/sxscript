@@ -28,13 +28,32 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
         return val;
     }
 
-    public async Task PrepareCallAsync(SxInterpreter interpreter, List<object> arguments)
+    public async Task PrepareCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)
     {
         LocalEnvironment = new SxEnvironment(Closure);
+        int firstNamed = 0;
+        
         for (int i = 0; i < Declaration.Pars.Count; i++)
         {
-            object? resolvedValue = arguments?.Count > i ? arguments[i] : await interpreter.EvaluateAsync(Declaration.Pars[i].DefaultValue);
+            if (arguments?.Count > i && arguments?[i].Name != null)
+            {
+                firstNamed = i;
+                break;
+            }
+            
+            object? resolvedValue = arguments?.Count > i ? arguments[i].Value : await interpreter.EvaluateAsync(Declaration.Pars[i].DefaultValue);
             LocalEnvironment.Set(Declaration.Pars[i].Name.Lexeme, resolvedValue);
+        }
+
+        for (int i = firstNamed; i < arguments?.Count; i++)
+        {
+            if (arguments?[i].Name == null)
+            {
+                continue;
+            }
+
+            object? resolvedValue = arguments[i].Value;
+            LocalEnvironment.Set(arguments[i]?.Name ?? "", resolvedValue);
         }
     }
 }
