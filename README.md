@@ -108,6 +108,7 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
  - [x] default parameter values `fn sum(a = 1, b = 2) {}`
  - [ ] parameter by name `myFn(myParam: 1)`
 - misc
+ - [x] local functions
  - [ ] params `fn sum(params numbers)` 
  
 ### Notes
