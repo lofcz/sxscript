@@ -106,7 +106,7 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
  - [x] (partially) calling FFI functions, this should support both `Func<T1..T16>` + `Action<T1..T16>` and `Func<Task<T1..T16>>` + `Action<Task<T1..T16>>`
 - sugar
  - [x] default parameter values `fn sum(a = 1, b = 2) {}`
- - [ ] parameter by name `myFn(myParam: 1)`
+ - [x] parameter by name `myFn(myParam: 1)`
 - misc
  - [x] local functions
  - [ ] params `fn sum(params numbers)` 
