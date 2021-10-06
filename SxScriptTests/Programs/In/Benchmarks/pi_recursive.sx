@@ -1,7 +1,7 @@
-steps = 0;
+steps = 2 > 1 ? 0 : 1 + 1++
 PI = 0;
 
-function F(i) {
+function F(i = 0) {
     steps++;
     if (steps >= 100) {
         return PI;

@@ -282,18 +282,20 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         {
             CurrentCallStatement = callable;
         }
-
+        
+        object? toRet = null!;
         List<object> arguments = new List<object>();
-        object toRet = null!;
 
         foreach (SxExpression argument in expr.Arguments)
         {
             arguments.Add(await EvaluateAsync(argument));
         }
-
+        
         if (callee is SxExpression.ISxCallable fn)
         {
-            toRet = fn.Call(this, arguments);
+            // [todo] remove me
+            await fn.PrepareCallAsync(this, arguments);
+            toRet = fn.Call(this);
         }
         else if (callee is SxExpression.ISxAsyncCallable asyncFn)
         {
@@ -304,6 +306,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         CallStack.Pop();
 
         return toRet;
+    }
+
+    public async Task<object> Visit(SxArgumentDeclrExpression expr)
+    {
+        return null!;
     }
 
     public void WriteLine(object str)
@@ -578,8 +585,10 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null;
     }
     
-    async Task ExecuteBlockAsync(SxBlockStatement blockStatement, List<SxStatement> statements, SxEnvironment environment)
+    public async Task<object?> ExecuteBlockAsync(SxBlockStatement blockStatement, List<SxStatement> statements, SxEnvironment environment)
     {
+        bool didReturn = false;
+        
         SxEnvironment previous = Environment;
         Environment = environment;
         foreach (SxStatement statement in statements)
@@ -591,10 +600,20 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 blockStatement.Break = false;
                 blockStatement.Continue = false;
                 blockStatement.Return = false;
+                didReturn = true;
                 break;
             }
         }
 
         Environment = previous;
+        
+        if (didReturn)
+        {
+            object? obj = blockStatement.ReturnValue;
+            blockStatement.ReturnValue = null!;
+            return obj;
+        }
+
+        return null;
     }
 }

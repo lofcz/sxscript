@@ -1,0 +1,6 @@
+function test(a = "hello") {
+  print a
+}
+
+test()
+test("world")

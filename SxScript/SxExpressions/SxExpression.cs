@@ -18,7 +18,8 @@ public abstract class SxExpression
    
    public interface ISxCallable
    {
-      object? Call(SxInterpreter interpreter, List<object> arguments);
+      object? Call(SxInterpreter interpreter);
+      Task PrepareCallAsync(SxInterpreter interpreter, List<object> arguments);
    }
    
    public interface ISxAsyncCallable : ISxAwaitableExpression

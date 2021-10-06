@@ -55,6 +55,11 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise("funkce", expr.Callee);
     }
 
+    public async Task<string> Visit(SxArgumentDeclrExpression expr)
+    {
+        return Parenthesise("argument fce", expr.Modifier);
+    }
+
     public async Task<string> Print(SxExpression expression)
     {
         return await expression.Accept(this);

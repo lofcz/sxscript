@@ -8,6 +8,8 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
     public SxBlockStatement Block { get; set; }
     public bool Return { get; set; }
     public SxStatement Statement { get; set; }
+    public bool Await { get; set; }
+    public SxEnvironment LocalEnvironment { get; set; }
 
     public SxFunction(SxFunctionStatement declaration, SxBlockStatement block)
     {
@@ -15,17 +17,22 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
         Block = block;
         Return = false;
         Statement = block;
+        Await = true;
     }
     
-    public object? Call(SxInterpreter interpreter, List<object> arguments)
+    public object? Call(SxInterpreter interpreter)
     {
-        SxEnvironment environment = new SxEnvironment(interpreter.Globals);
-        for (int i = 0; i < arguments.Count; i++)
-        {
-            environment.Set(Declaration.Pars[i].Lexeme, arguments[i]);
-        }
-
-        object? val = interpreter.ExecuteBlock(Block, Declaration.Body.Statements, environment);
+        object? val = interpreter.ExecuteBlock(Block, Declaration.Body.Statements, LocalEnvironment);
         return val;
+    }
+
+    public async Task PrepareCallAsync(SxInterpreter interpreter, List<object> arguments)
+    {
+        LocalEnvironment = new SxEnvironment(interpreter.Globals);
+        for (int i = 0; i < Declaration.Pars.Count; i++)
+        {
+            object? resolvedValue = arguments?.Count > i ? arguments[i] : await interpreter.EvaluateAsync(Declaration.Pars[i].DefaultValue);
+            LocalEnvironment.Set(Declaration.Pars[i].Name.Lexeme, resolvedValue);
+        }
     }
 }

@@ -76,7 +76,7 @@ public class SxParser<T>
                        | ("++" | "--") primary
                        | primary ;
         call           → "await"? primary ( "(" arguments? ")" )*                                
-        arguments      → expression ("," expression )* ;               
+        arguments      → expression ("," expression ("=" expression)? )* ;               
         primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil"
                        | "(" expression ")" ;
      */
@@ -105,14 +105,23 @@ public class SxParser<T>
 
         SxToken name = Consume(SxTokenTypes.Identifier, $"Očekáván název {kind}");
         Consume(SxTokenTypes.LeftParen, "Očekávána ( za deklarací signatury funkce");
-        List<SxToken> pars = new List<SxToken>();
+        List<SxArgumentDeclrExpression> pars = new List<SxArgumentDeclrExpression>();
 
         if (!Check(SxTokenTypes.RightParen))
         {
             do
             {
+                SxExpression argumentDefaultValue = null!;
                 SxToken par = Consume(SxTokenTypes.Identifier, "Očekáván název parametru");
-                pars.Add(par);
+                bool hasDefaultValue = false;
+                
+                if (Match(SxTokenTypes.Equal))
+                {
+                    argumentDefaultValue = Expression();
+                    hasDefaultValue = true;
+                }
+                
+                pars.Add(new SxArgumentDeclrExpression(par, argumentDefaultValue, hasDefaultValue));
             } while (Match(SxTokenTypes.Comma));
         }
 
@@ -588,7 +597,7 @@ public class SxParser<T>
         {
             if (Match(SxTokenTypes.LeftParen))
             {
-                expr = ResolveCall(expr);
+                expr = Arguments(expr);
             }
             else
             {
@@ -604,7 +613,7 @@ public class SxParser<T>
         return expr;
     }
 
-    SxExpression ResolveCall(SxExpression callee)
+    SxExpression Arguments(SxExpression callee)
     {
         List<SxExpression> arguments = new List<SxExpression>();
         if (!Check(SxTokenTypes.RightParen))
