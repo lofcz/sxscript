@@ -477,7 +477,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxFunctionStatement expr)
     {
-        SxFunction fn = new SxFunction(expr, expr.Body);
+        SxFunction fn = new SxFunction(expr, expr.Body, Environment);
         Environment.SetIfDefined(expr.Name.Lexeme, fn);
         return null!;
     }

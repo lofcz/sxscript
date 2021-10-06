@@ -1,0 +1,13 @@
+fn counter() {
+  var i = 0;
+  fn count() {
+    i++;
+    print i;
+  }
+
+  return count;
+}
+
+var rf = counter();
+rf();
+rf();
