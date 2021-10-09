@@ -5,7 +5,7 @@ public class SxForStatement : SxStatement, SxStatement.ISxLoopingStatement
     public SxStatement Initializer { get; set; }
     public SxExpression Condition { get; set; }
     public SxExpression Increment { get; set; }
-    public SxStatement Statement { get; set; }
+    public SxStatement Body { get; set; }
     public bool Break { get; set; }
     public bool Continue { get; set; }
 
@@ -14,7 +14,7 @@ public class SxForStatement : SxStatement, SxStatement.ISxLoopingStatement
         Initializer = initializer;
         Condition = condition;
         Increment = increment;
-        Statement = statement;
+        Body = statement;
         Break = false;
         Continue = false;
     }

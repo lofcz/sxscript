@@ -1,4 +1,5 @@
 using System.Text;
+using SxScript.SxSa;
 using SxScript.SxStatements;
 
 namespace SxScript;
@@ -16,7 +17,9 @@ public class SxScript
         List<SxStatement> exprStatements = parser.Parse();
         
         SxInterpreter interpreter = new SxInterpreter();
-        object? obj = interpreter.Evaluate(exprStatements, stdOut);
+        SxResolver resolver = new SxResolver(interpreter);
+        await resolver.Resolve(exprStatements);
+        object? obj = await interpreter.Evaluate(exprStatements, stdOut);
 
         return stdOut.ToString();
     }

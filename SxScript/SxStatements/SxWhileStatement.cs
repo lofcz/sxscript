@@ -2,14 +2,14 @@ namespace SxScript.SxStatements;
 
 public class SxWhileStatement : SxStatement, SxStatement.ISxLoopingStatement
 {
-    public SxStatement Statement { get; set; }
+    public SxStatement Body { get; set; }
     public bool Break { get; set; }
     public bool Continue { get; set; }
 
     public SxWhileStatement(SxExpression expr, SxStatement statement)
     {
         Expr = expr;
-        Statement = statement;
+        Body = statement;
         Break = false;
         Continue = false;
     }

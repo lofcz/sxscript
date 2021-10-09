@@ -40,6 +40,11 @@ public class SxEnvironment
 
         Enclosing?.SetIfDefined(name, value);
     }
+
+    public void SetAtIfDefined(int distance, string name, object? value = null)
+    {
+        Ancestor(distance).SetIfDefined(name, value);
+    }
     
     public void SetIfDefinedToSelf(string name, object? value = null)
     {
@@ -66,5 +71,28 @@ public class SxEnvironment
         }
 
         return Enclosing?.Get(name);
+    }
+
+    public object? GetAt(int distance, string name)
+    {
+        return Ancestor(distance).Get(name);
+    }
+
+    SxEnvironment Ancestor(int distance)
+    {
+        SxEnvironment env = this;
+        for (int i = 0; i < distance; i++)
+        {
+            if (env.Enclosing != null)
+            {
+                env = env.Enclosing;   
+            }
+            else
+            {
+                return env;
+            }
+        }
+
+        return env;
     }
 }

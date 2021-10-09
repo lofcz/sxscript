@@ -1,0 +1,10 @@
+var a = 1
+{
+  function showA() {
+    print a
+  }
+
+  showA()
+  var a = 2
+  showA()
+}

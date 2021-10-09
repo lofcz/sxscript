@@ -160,6 +160,12 @@
       <None Update="Programs\Out\Statements\function_default_and_named.sx">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Programs\In\Statements\closures.sx">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Programs\Out\Statements\closures.sx">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

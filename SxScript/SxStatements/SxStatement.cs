@@ -32,7 +32,7 @@ public abstract class SxStatement
     
     public interface ISxLoopingStatement : ISxBreakableStatement
     {
-        public SxStatement Statement { get; set; }
+        public SxStatement Body { get; set; }
     }
     
     public interface ISxCallStatement : ISxReturnableStatement

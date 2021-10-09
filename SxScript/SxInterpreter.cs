@@ -23,6 +23,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public Stack<SxExpression> CallStack = new Stack<SxExpression>();
     public SxStatement.ISxLoopingStatement CurrentLoopStatement = null;
     public SxStatement.ISxCallStatement CurrentCallStatement = null;
+    public Dictionary<SxExpression, int> Locals = new Dictionary<SxExpression, int>();
 
     public SxInterpreter()
     {
@@ -166,6 +167,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return true;
     }
 
+    public void Resolve(SxExpression expression, int depth)
+    {
+        Locals.Add(expression, depth);
+    }
+
     public async Task<object> Visit(SxLiteralExpression expr)
     {
         return expr.Value;
@@ -174,6 +180,16 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public async Task<object> Visit(SxGroupingExpression expr)
     {
         return await EvaluateAsync(expr.Expr);
+    }
+
+    public object? LookUpVariable(SxToken token, SxExpression expression)
+    {
+        if (Locals.TryGetValue(expression, out int distance))
+        {
+            return Environment.GetAt(distance, token.Lexeme);
+        }
+
+        return Globals.Get(token.Lexeme);
     }
 
     // expr ? caseTrue : caseFalse
@@ -190,13 +206,21 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     
     public async Task<object> Visit(SxVarExpression expr)
     {
-        object obj = (Environment.Get(expr.Name.Lexeme) ?? null)!;
-        return obj;
+        return LookUpVariable(expr.Name, expr)!;
     }
 
     public async Task<object> Visit(SxAssignExpression expr)
     {
-        Environment.SetIfDefined(expr.Name.Lexeme, await EvaluateAsync(expr.Value));
+        object? val = await EvaluateAsync(expr.Value);
+        if (Locals.TryGetValue(expr, out int distance))
+        {
+            Environment.SetAtIfDefined(distance, expr.Name.Lexeme, val);
+        }
+        else
+        {
+            Globals.SetIfDefined(expr.Name.Lexeme, val);
+        }
+        
         return null!;
     }
 
@@ -443,7 +467,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public async Task<object> Visit(SxWhileStatement expr)
     {
         LoopDepth++;
-        LoopStack.Push(expr.Statement);
+        LoopStack.Push(expr.Body);
         CurrentLoopStatement = expr;
         
         while (ObjectIsTruthy(await EvaluateAsync(expr.Expr)))
@@ -460,7 +484,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 break;
             }
             
-            await ExecuteAsync(expr.Statement);
+            await ExecuteAsync(expr.Body);
         }
 
         LoopStack.Pop();
@@ -471,7 +495,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public async Task<object> Visit(SxBreakStatement expr)
     {
         CurrentLoopStatement.Break = true;
-        if (CurrentLoopStatement.Statement is SxStatement.ISxBreakableStatement breakableStatement)
+        if (CurrentLoopStatement.Body is SxStatement.ISxBreakableStatement breakableStatement)
         {
             breakableStatement.Break = true;
         }
@@ -482,7 +506,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public async Task<object> Visit(SxContinueStatement expr)
     {
         CurrentLoopStatement.Continue = true;
-        if (CurrentLoopStatement.Statement is SxStatement.ISxBreakableStatement breakableStatement)
+        if (CurrentLoopStatement.Body is SxStatement.ISxBreakableStatement breakableStatement)
         {
             breakableStatement.Continue = true;
         }
@@ -540,7 +564,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public async Task<object> Visit(SxForStatement expr)
     {
         LoopDepth++;
-        LoopStack.Push(expr.Statement);
+        LoopStack.Push(expr.Body);
         CurrentLoopStatement = expr;
         
         await ExecuteAsync(expr.Initializer);
@@ -559,7 +583,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 break;
             }
             
-            await ExecuteAsync(expr.Statement);
+            await ExecuteAsync(expr.Body);
             await EvaluateAsync(expr.Increment);
         }
 
