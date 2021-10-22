@@ -7,4 +7,4 @@ class Cake {
 
 var cake = Cake();
 cake.flavor = "German chocolate";
-print cake.taste();
+cake.taste();

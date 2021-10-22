@@ -15,6 +15,12 @@ public abstract class SxNativeBase : SxExpression.ISxCallable
     {
         return null!;
     }
+
+    public Task<object?> PrepareAndCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)
+    {
+        return null!;
+    }
+
     public Task PrepareCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)
     {
         return null!;

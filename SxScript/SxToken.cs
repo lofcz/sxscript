@@ -52,6 +52,9 @@ namespace SxScript
         KeywordGoto,
         KeywordAsync,
         KeywordAwait,
+        KeywordStatic,
+        KeywordPublic,
+        KeywordPrivate,
         Eof
     }
     

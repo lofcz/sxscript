@@ -10,6 +10,7 @@ public class SxParser<T>
     private int Current { get; set; }
     private int LoopDepth { get; set; }
     public List<SxStatement> Statements { get; set; }
+    public List<SxTokenTypes> AccessModifiersAndIdentifier = new List<SxTokenTypes>() {SxTokenTypes.KeywordStatic, SxTokenTypes.Identifier};
     
     public SxParser(List<SxToken> tokens)
     {
@@ -34,9 +35,11 @@ public class SxParser<T>
                          | classDeclr
                          | statement ;
         funDeclr       → (modifier)?* ("fn" | "func" | "function") function ;
-        classDeclr     → "class" IDENTIFIER "{"? function* "}" ;
+        classDeclr     → "class" IDENTIFIER "{"? (memberFunction | memberDeclr)* "}" ;
         modifier       → "async" ;
+        memberFunction → "static"? function ;
         function       → IDENTIFIER "(" parameters? ")" block ;
+        memberDeclr    → IDENTIFIER ("=" expression)? ";"? ;   
         parameters     → IDENTIFIER ( "," IDENTIFIER )* ;                 
         varDeclr       → "var"? IDENTIFIER ("=" expression)? ";"? ;                   
         statement      → exprStmt
@@ -115,16 +118,56 @@ public class SxParser<T>
         }
 
         List<SxFunctionStatement> methods = new List<SxFunctionStatement>();
+        List<SxFunctionStatement> classMethods = new List<SxFunctionStatement>();
+        List<SxVarStatement> fields = new List<SxVarStatement>();
+        
         while (!Check(SxTokenTypes.RightBrace) && !IsAtEnd())
         {
-            methods.Add(FunDeclr("metoda", false));
+            SxTokenTypes? next = NextTokenNotAccessModifierOrIdentifier(1);
+            if (next == SxTokenTypes.LeftParen)
+            {
+                SxFunctionStatement fn = MemberFunction("metoda");
+                if (fn.IsStatic)
+                {
+                    classMethods.Add(fn);
+                }
+                else
+                {
+                    methods.Add(fn);   
+                }
+            }
+            else
+            {
+                fields.Add(MemberDeclr());
+            }
         }
 
         Consume(SxTokenTypes.RightBrace, "Očekávána } na konci deklarace třídy");
-        return new SxClassStatement(name, methods);
+        return new SxClassStatement(name, methods, fields, classMethods);
     }
 
-    SxFunctionStatement FunDeclr(string kind, bool includeFnKeyword = true)
+    SxTokenTypes? NextTokenNotAccessModifierOrIdentifier(int i = 1)
+    {
+        while (!IsAtEnd())
+        {
+            if (!CheckNth(i, AccessModifiersAndIdentifier))
+            {
+                break;
+            }
+
+            i++;
+        }
+
+        return PeekNth(i)?.Type ?? SxTokenTypes.Eof;
+    }
+
+    SxFunctionStatement MemberFunction(string kind)
+    {
+        bool isStatic = Match(SxTokenTypes.KeywordStatic);
+        return FunDeclr(kind, false, false, isStatic);
+    }
+    
+    SxFunctionStatement FunDeclr(string kind, bool includeFnKeyword = true, bool includeRightBrace = false, bool isStatic = false)
     {
         if (includeFnKeyword)
         {
@@ -137,12 +180,12 @@ public class SxParser<T>
         }
 
         SxToken name = Consume(SxTokenTypes.Identifier, $"Očekáván název {kind}");
-        SxFunctionExpression expr = FunctionBody("function");
+        SxFunctionExpression expr = FunctionBody("function", includeRightBrace);
 
-        return new SxFunctionStatement(name, expr);
+        return new SxFunctionStatement(name, expr, isStatic);
     }
 
-    SxFunctionExpression FunctionBody(string kind)
+    SxFunctionExpression FunctionBody(string kind, bool includeRightBrace = false)
     {
         Consume(SxTokenTypes.LeftParen, "Očekávána ( za deklarací signatury funkce");
         List<SxArgumentDeclrExpression> pars = new List<SxArgumentDeclrExpression>();
@@ -168,12 +211,28 @@ public class SxParser<T>
         Consume(SxTokenTypes.RightParen, "Očekávána ) na konci deklarace signatury funkce");
         Consume(SxTokenTypes.LeftBrace, "Očekávána { na začátku deklarace obsahu funkce");
         List<SxStatement> body = Block();
-
         return new SxFunctionExpression(pars, body);
     }
 
+    SxVarStatement MemberDeclr()
+    {
+        SxToken identifier = Consume(SxTokenTypes.Identifier, "Očekáván název proměnné");
+        SxExpression initialVal = null;
+        
+        if (Match(SxTokenTypes.Equal))
+        {
+            initialVal = Expression();
+        }
+
+        if (Check(SxTokenTypes.Semicolon))
+        {
+            Consume(SxTokenTypes.Semicolon, "Očekáván ;");
+        }
+
+        return new SxVarStatement(initialVal, identifier);
+    }
     
-    SxStatement VarDeclr()
+    SxVarStatement VarDeclr()
     {
         SxToken identifier = Consume(SxTokenTypes.Identifier, "Očekáván název proměnné");
         SxExpression initialVal = null;
@@ -782,6 +841,16 @@ public class SxParser<T>
         }
         
         return PeekNth(n)?.Type == type;
+    }
+    
+    bool CheckNth(int n, List<SxTokenTypes> types)
+    {
+        if (IsAtEnd())
+        {
+            return false;
+        }
+
+        return types.Contains(PeekNth(n)?.Type ?? SxTokenTypes.Eof);
     }
 
     SxToken Step()

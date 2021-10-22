@@ -6,7 +6,14 @@ public enum SxFunctionTypes
 {
     None,
     Function,
-    Method
+    Method,
+    Constructor
+}
+
+public enum SxClassTypes
+{
+    None,
+    Class
 }
 
 public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
@@ -18,8 +25,9 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
     public bool Await { get; set; }
     public SxEnvironment LocalEnvironment { get; set; }
     public SxEnvironment Closure { get; set; }
+    public bool IsContructor { get; set; }
 
-    public SxFunction(SxFunctionStatement declaration, SxBlockStatement block, SxEnvironment closure)
+    public SxFunction(SxFunctionStatement declaration, SxBlockStatement block, SxEnvironment closure, bool isContructor)
     {
         Declaration = declaration;
         Block = block;
@@ -27,19 +35,32 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
         Statement = block;
         Await = true;
         Closure = closure;
+        IsContructor = isContructor;
     }
 
     public SxFunction Bind(SxInstance instance)
     {
         SxEnvironment environment = new SxEnvironment(Closure);
         environment.DefineOrRedefineAndAssign("this", instance);
-        return new SxFunction(Declaration, Block, environment);
+        return new SxFunction(Declaration, Block, environment, IsContructor);
     }
     
     public object? Call(SxInterpreter interpreter)
     {
         object? val = interpreter.ExecuteBlock(Block, Declaration.FunctionExpression.Body.Statements, LocalEnvironment);
+
+        if (IsContructor)
+        {
+            return Closure.GetAt(0, "this");
+        }
+        
         return val;
+    }
+
+    public async Task<object?> PrepareAndCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)
+    {
+        await PrepareCallAsync(interpreter, arguments);
+        return Call(interpreter);
     }
 
     public async Task PrepareCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)

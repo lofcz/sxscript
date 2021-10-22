@@ -6,13 +6,15 @@ public class SxFunctionStatement : SxStatement, SxStatement.ISxCallStatement
     public bool Return { get; set; }
     public SxStatement Statement { get; set; } 
     public SxFunctionExpression FunctionExpression { get; set; }
+    public bool IsStatic { get; set; }
 
-    public SxFunctionStatement(SxToken name, SxFunctionExpression functionExpression)
+    public SxFunctionStatement(SxToken name, SxFunctionExpression functionExpression, bool isStatic)
     {
         Name = name;
         FunctionExpression = functionExpression;
         Return = false;
         Statement = this;
+        IsStatic = isStatic;
     }
     
     public override async Task<object?> Accept<T>(ISxStatementVisitor<T> visitor)

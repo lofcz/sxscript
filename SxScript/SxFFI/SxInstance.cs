@@ -3,11 +3,15 @@ namespace SxScript.SxFFI;
 public class SxInstance
 {
     public SxClass Class { get; set; }
-    public Dictionary<string, object> Fields { get; set; } = new Dictionary<string, object>();
+    public Dictionary<string, object> Fields { get; set; }
 
-    public SxInstance(SxClass cls)
+    public SxInstance(SxClass? cls)
     {
-        Class = cls;
+        if (cls != null)
+        {
+            Class = cls;
+            Fields = new Dictionary<string, object>(cls.Fields);   
+        }
     }
 
     public void Set(SxToken name, object value)

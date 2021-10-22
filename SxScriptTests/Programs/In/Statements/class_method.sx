@@ -4,4 +4,4 @@ class World {
     }
 }
 
-print World().SayHi();
+World().SayHi();

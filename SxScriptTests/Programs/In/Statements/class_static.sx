@@ -1,0 +1,7 @@
+class Math {
+    static Pow(n) {
+        return n * n;
+    }
+}
+
+print Math.Pow(3)

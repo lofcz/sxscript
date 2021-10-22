@@ -16,7 +16,8 @@ namespace SxScript
             {"null", SxTokenTypes.Nill}, {"nill", SxTokenTypes.Nill}, {"or", SxTokenTypes.KeywordOr}, {"print", SxTokenTypes.KeywordPrint},
             {"return", SxTokenTypes.KeywordReturn}, {"super", SxTokenTypes.KeywordSuper}, {"this", SxTokenTypes.KeywordThis}, {"true", SxTokenTypes.True},
             {"var", SxTokenTypes.KeywordVar}, {"while", SxTokenTypes.KeywordWhile}, {"break", SxTokenTypes.KeywordBreak}, {"continue", SxTokenTypes.KeywordContinue},
-            {"goto", SxTokenTypes.KeywordGoto}, {"async", SxTokenTypes.KeywordAsync}, {"await", SxTokenTypes.KeywordAwait}
+            {"goto", SxTokenTypes.KeywordGoto}, {"async", SxTokenTypes.KeywordAsync}, {"await", SxTokenTypes.KeywordAwait}, {"public", SxTokenTypes.KeywordPublic},
+            {"private", SxTokenTypes.KeywordPrivate}, {"static", SxTokenTypes.KeywordStatic}
         };
 
         public SxLexer(string source)

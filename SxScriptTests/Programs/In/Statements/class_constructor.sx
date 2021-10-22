@@ -1,0 +1,18 @@
+class MyClass {
+    FieldA = 5;
+
+    SetFieldA(value) {
+        this.FieldA = value;
+    } 
+    
+    GetFieldA() {
+        return this.FieldA;
+    }
+}
+
+var instance = MyClass();
+print instance.GetFieldA();
+instance.SetFieldA(10);
+print instance.GetFieldA();
+instance.SetFieldA(15);
+print instance.GetFieldA();

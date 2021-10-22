@@ -7,6 +7,7 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
 {
     public Stack<Dictionary<string, SxResolverVariable>> Scopes { get; set; }
     public SxInterpreter Interpreter { get; set; }
+    public SxClassTypes CurrentClass = SxClassTypes.None;
 
     public SxResolver(SxInterpreter interpreter)
     {
@@ -215,19 +216,41 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
 
     public async Task<object> Visit(SxClassStatement expr)
     {
+        SxClassTypes enclosingClass = CurrentClass;
+        CurrentClass = SxClassTypes.Class;
+        
         Declare(expr.Name);
         Define(expr.Name);
 
         BeginScope();
         Scopes.Peek()?.Add("this", new SxResolverVariable(expr.Name, SxResolverVariableStates.Used));
-        
+
         foreach (SxFunctionStatement method in expr.Methods)
         {
-            await ResolveFunction(method, SxFunctionTypes.Method);
+            SxFunctionTypes methodType = SxFunctionTypes.Method;
+            if (method.Name.Lexeme == expr.Name.Lexeme)
+            {
+                methodType = SxFunctionTypes.Constructor;
+            }
+
+            await ResolveFunction(method, methodType);
         }
         
+        foreach (SxFunctionStatement method in expr.ClassMethods)
+        {
+           // BeginScope();
+           // Scopes.Peek().Add("this", new SxResolverVariable(new SxToken(SxTokenTypes.KeywordThis, "this", "this", 0), SxResolverVariableStates.Used));
+            await ResolveFunction(method, SxFunctionTypes.Method);
+           // EndScope();
+        }
+
+        foreach (SxVarStatement field in expr.Fields)
+        {
+            ResolveLocal(field.Expr, field.Name, true);
+        }
+
         EndScope();
-        
+        CurrentClass = enclosingClass;
         return null!;
     }
 
@@ -375,6 +398,13 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
 
     public async Task<object> Visit(SxThisExpression expr)
     {
+        if (CurrentClass == SxClassTypes.None)
+        {
+            expr.IsInvalid = true;
+            // [todo] pokus o použití this mimo kontext třídy
+            return null!;
+        }
+        
         ResolveLocal(expr, expr.Keyword, true);
         return null!;
     }

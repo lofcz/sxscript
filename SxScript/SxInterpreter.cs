@@ -333,8 +333,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         if (callee is SxExpression.ISxCallable fn)
         {
             // [todo] remove me
-            await fn.PrepareCallAsync(this, arguments);
-            toRet = fn.Call(this);
+            toRet = await fn.PrepareAndCallAsync(this, arguments);
         }
         else if (callee is SxExpression.ISxAsyncCallable asyncFn)
         {
@@ -349,7 +348,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxFunctionExpression expr)
     {
-        return new SxFunction(new SxFunctionStatement(null, expr), expr.Body, Environment);
+        return new SxFunction(new SxFunctionStatement(null, expr, false), expr.Body, Environment, false);
     }
 
     public async Task<object> Visit(SxGetExpression expr)
@@ -381,6 +380,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxThisExpression expr)
     {
+        if (expr.IsInvalid)
+        {
+            return null!;
+        }
+        
         return LookUpVariable(expr.Keyword, expr)!;
     }
 
@@ -389,7 +393,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null!;
     }
 
-    public void WriteLine(object str)
+    public void WriteLine(object? str)
     {
         if (StdOut == null)
         {
@@ -397,7 +401,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         }
         else
         {
-            StdOut.Append($"{str}\n");
+            StdOut.Append($"{str ?? "null"}\n");
         }
     }
 
@@ -553,7 +557,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxFunctionStatement expr)
     {
-        SxFunction fn = new SxFunction(expr, expr.FunctionExpression.Body, Environment);
+        SxFunction fn = new SxFunction(expr, expr.FunctionExpression.Body, Environment, false);
         Environment.SetIfDefined(expr.Name.Lexeme, fn);
         return null!;
     }
@@ -584,16 +588,31 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     {
         Environment.DefineOrRedefineEmpty(expr.Name.Lexeme);
         
+        Dictionary<string, SxFunction> classMethods = new Dictionary<string, SxFunction>();
         Dictionary<string, SxFunction> methods = new Dictionary<string, SxFunction>();
+        Dictionary<string, object> fields = new Dictionary<string, object>();
+
+        foreach (SxFunctionStatement classMethod in expr.ClassMethods)
+        {
+            SxFunction func = new SxFunction(classMethod, classMethod.FunctionExpression.Body, Environment, classMethod.Name.Lexeme == expr.Name.Lexeme);
+            classMethods.Add(classMethod.Name.Lexeme, func);
+        }
+        
         foreach (SxFunctionStatement method in expr.Methods)
         {
-            SxFunction func = new SxFunction(method, method.FunctionExpression.Body, Environment);
+            SxFunction func = new SxFunction(method, method.FunctionExpression.Body, Environment, method.Name.Lexeme == expr.Name.Lexeme);
             methods.Add(method.Name.Lexeme, func);
         }
         
-        SxClass cls = new SxClass(expr.Name.Lexeme, methods);
-        Environment.DefineOrRedefineAndAssign(expr.Name.Lexeme, cls);
+        foreach (SxVarStatement field in expr.Fields)
+        {
+            fields.Add(field.Name.Lexeme, await EvaluateAsync(field.Expr));
+        }
 
+        SxClass metaclass = new SxClass(null, $"{expr.Name.Lexeme} metaclass", classMethods, fields);
+        SxClass cls = new SxClass(metaclass, expr.Name.Lexeme, methods, fields);
+        
+        Environment.DefineOrRedefineAndAssign(expr.Name.Lexeme, cls);
         return null!;
     }
 
