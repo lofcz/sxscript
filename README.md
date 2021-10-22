@@ -102,6 +102,15 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
 - evaluation
  - [x] interpretation
  - [ ] bytecode + vm
+- OOP
+ - [x] classes
+ - [x] this
+ - [ ] constructors
+ - [ ] static methods
+ - [ ] access modifiers (public, private)
+ - [ ] inheritence
+ - [ ] polymorphism
+ - [ ] getters & setters
 - FFI
  - [x] (partially) calling FFI functions, this should support both `Func<T1..T16>` + `Action<T1..T16>` and `Func<Task<T1..T16>>` + `Action<Task<T1..T16>>`
 - sugar
