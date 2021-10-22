@@ -1,3 +1,4 @@
+using SxScript.SxFFI;
 using SxScript.SxStatements;
 
 namespace SxScript.SxSa;
@@ -123,6 +124,10 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
             await Resolve(expr.Statements);
             return null!;
         }
+        else
+        {
+            int cx = 1;
+        }
         
         BeginScope();
         await Resolve(expr.Statements);
@@ -197,7 +202,7 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
     {
         Declare(expr.Name);
         Define(expr.Name);
-        await ResolveFunction(expr);
+        await ResolveFunction(expr, SxFunctionTypes.Function);
 
         return null!;
     }
@@ -205,6 +210,24 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
     public async Task<object> Visit(SxReturnStatement expr)
     {
         await Resolve(expr.Value);
+        return null!;
+    }
+
+    public async Task<object> Visit(SxClassStatement expr)
+    {
+        Declare(expr.Name);
+        Define(expr.Name);
+
+        BeginScope();
+        Scopes.Peek()?.Add("this", new SxResolverVariable(expr.Name, SxResolverVariableStates.Used));
+        
+        foreach (SxFunctionStatement method in expr.Methods)
+        {
+            await ResolveFunction(method, SxFunctionTypes.Method);
+        }
+        
+        EndScope();
+        
         return null!;
     }
 
@@ -272,11 +295,15 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         {
             scope.Add(token.Lexeme, new SxResolverVariable(token, SxResolverVariableStates.Declared));   
         }
+        else
+        {
+            scope[token.Lexeme] = new SxResolverVariable(token, SxResolverVariableStates.Declared);
+        }
     }
 
     void Define(SxToken token)
     {
-        if (token == null)
+        if (token == null!)
         {
             return;
         }
@@ -291,11 +318,19 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         {
             scope.Add(token.Lexeme, new SxResolverVariable(token, SxResolverVariableStates.Defined));   
         }
+        else
+        {
+            scope[token.Lexeme] = new SxResolverVariable(token, SxResolverVariableStates.Defined);
+        }
     }
 
-    async Task ResolveFunction(SxFunctionStatement func)
+    async Task ResolveFunction(SxFunctionStatement func, SxFunctionTypes type)
     {
-        BeginScope();
+        if (type != SxFunctionTypes.Method)
+        {
+            BeginScope();   
+        }
+        
         foreach (SxToken param in func.FunctionExpression.Pars.Select(x => x.Name))
         {
             Declare(param);
@@ -303,7 +338,11 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         }
 
         await Resolve(func.FunctionExpression.Body);
-        EndScope();
+        
+        if (type != SxFunctionTypes.Method)
+        {
+            EndScope();   
+        }
     }
     
     public async Task<object> Visit(SxFunctionExpression expr)
@@ -318,6 +357,25 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         await Resolve(expr.Body);
         EndScope();
 
+        return null!;
+    }
+
+    public async Task<object> Visit(SxGetExpression expr)
+    {
+        await Resolve(expr.Object);
+        return null!;
+    }
+
+    public async Task<object> Visit(SxSetExpression expr)
+    {
+        await Resolve(expr.Value);
+        await Resolve(expr.Object);
+        return null!;
+    }
+
+    public async Task<object> Visit(SxThisExpression expr)
+    {
+        ResolveLocal(expr, expr.Keyword, true);
         return null!;
     }
 

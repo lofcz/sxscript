@@ -17,6 +17,7 @@ public abstract class SxStatement
         Task<T> Visit(SxContinueStatement expr);
         Task<T> Visit(SxFunctionStatement expr);
         Task<T> Visit(SxReturnStatement expr);
+        Task<T> Visit(SxClassStatement expr);
     }
     
     public interface ISxBreakableStatement

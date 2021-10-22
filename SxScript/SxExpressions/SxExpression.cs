@@ -15,6 +15,9 @@ public abstract class SxExpression
       Task<T> Visit(SxPostfixExpression expr);
       Task<T> Visit(SxCallExpression expr);
       Task<T> Visit(SxFunctionExpression expr);
+      Task<T> Visit(SxGetExpression expr);
+      Task<T> Visit(SxSetExpression expr);
+      Task<T> Visit(SxThisExpression expr);
    }
    
    public interface ISxCallable

@@ -1,0 +1,7 @@
+class World {
+    SayHi() {
+        print "hello world";
+    }
+}
+
+print World().SayHi();

@@ -22,6 +22,16 @@ public class SxEnvironment
         
         Variables.Add(name, value);
     }
+
+    public void DefineOrRedefineEmpty(string name)
+    {
+        Set(name, null);
+    }
+
+    public void DefineOrRedefineAndAssign(string name, object? value = null)
+    {
+        Set(name, value);
+    }
     
     // [todo] vyřešit co tady
     public void SetIfDefined(string name, object? value = null)

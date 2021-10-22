@@ -1,0 +1,10 @@
+class myClass {
+    myFn() {
+        print "test";
+    }
+}
+
+instance = myClass();
+
+print myClass;
+print instance;

@@ -352,6 +352,38 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return new SxFunction(new SxFunctionStatement(null, expr), expr.Body, Environment);
     }
 
+    public async Task<object> Visit(SxGetExpression expr)
+    {
+        object obj = await EvaluateAsync(expr.Object);
+        if (obj is SxInstance instance)
+        {
+            return instance.Get(expr.Name)!;
+        }
+        
+        // [todo] pokus o přístup k vlastnosti na něčem jiném než instanci
+
+        return null!;
+    }
+
+    public async Task<object> Visit(SxSetExpression expr)
+    {
+        object obj = await EvaluateAsync(expr.Object);
+        if (obj is SxInstance instance)
+        {
+            object val = await EvaluateAsync(expr.Value);
+            instance.Set(expr.Name, val);
+            return val;
+        }
+
+        // [todo] pokus o zápis vlastnosti do něčeho jiného než instance
+        return null!;
+    }
+
+    public async Task<object> Visit(SxThisExpression expr)
+    {
+        return LookUpVariable(expr.Keyword, expr)!;
+    }
+
     public async Task<object> Visit(SxArgumentDeclrExpression expr)
     {
         return null!;
@@ -548,6 +580,23 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return val;
     }
 
+    public async Task<object> Visit(SxClassStatement expr)
+    {
+        Environment.DefineOrRedefineEmpty(expr.Name.Lexeme);
+        
+        Dictionary<string, SxFunction> methods = new Dictionary<string, SxFunction>();
+        foreach (SxFunctionStatement method in expr.Methods)
+        {
+            SxFunction func = new SxFunction(method, method.FunctionExpression.Body, Environment);
+            methods.Add(method.Name.Lexeme, func);
+        }
+        
+        SxClass cls = new SxClass(expr.Name.Lexeme, methods);
+        Environment.DefineOrRedefineAndAssign(expr.Name.Lexeme, cls);
+
+        return null!;
+    }
+
     public async Task<object> Visit(SxLabelStatement expr)
     {
         if (!Labels.TryGetValue(expr.Identifier.Lexeme, out _))
@@ -603,6 +652,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         
         SxEnvironment previous = Environment;
         Environment = environment;
+
         foreach (SxStatement statement in statements)
         {
             Execute(statement);
@@ -616,7 +666,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 break;
             }
         }
-
+        
         Environment = previous;
 
         if (didReturn)
@@ -632,9 +682,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public async Task<object?> ExecuteBlockAsync(SxBlockStatement blockStatement, List<SxStatement> statements, SxEnvironment environment)
     {
         bool didReturn = false;
-        
-        SxEnvironment previous = Environment;
+
+        SxEnvironment previous = null;
+        previous = Environment;
         Environment = environment;
+
         foreach (SxStatement statement in statements)
         {
             await ExecuteAsync(statement);
@@ -650,7 +702,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         }
 
         Environment = previous;
-        
+
         if (didReturn)
         {
             object? obj = blockStatement.ReturnValue;

@@ -60,6 +60,21 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise("anonymní funkce", expr.Body.Statements.Select(x => x.Expr).ToList());
     }
 
+    public async Task<string> Visit(SxGetExpression expr)
+    {
+        return Parenthesise("čtení vlastnosti", expr.Object);
+    }
+
+    public async Task<string> Visit(SxSetExpression expr)
+    {
+        return Parenthesise("zápis vlastnosti", expr.Object);
+    }
+
+    public async Task<string> Visit(SxThisExpression expr)
+    {
+        return Parenthesise("lokální kontext", new SxLiteralExpression(expr.Keyword));
+    }
+
     public async Task<string> Visit(SxArgumentDeclrExpression expr)
     {
         return Parenthesise("argument fce", expr.Modifier);

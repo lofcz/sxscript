@@ -1,0 +1,56 @@
+namespace SxScript.SxFFI;
+
+public class SxInstance
+{
+    public SxClass Class { get; set; }
+    public Dictionary<string, object> Fields { get; set; } = new Dictionary<string, object>();
+
+    public SxInstance(SxClass cls)
+    {
+        Class = cls;
+    }
+
+    public void Set(SxToken name, object value)
+    {
+        if (Fields.ContainsKey(name.Lexeme))
+        {
+            Fields[name.Lexeme] = value;
+        }
+        else
+        {
+            Fields.Add(name.Lexeme, value);
+        }
+    }
+
+    public object? Get(SxToken name)
+    {
+        if (Fields.TryGetValue(name.Lexeme, out object? val))
+        {
+            return val;
+        }
+
+        SxFunction? fn = FindMethod(name.Lexeme);;
+        if (fn != null)
+        {
+            return fn.Bind(this);
+        }
+
+        // [todo] nedefinovaná vlastnost
+        return null;
+    }
+
+    SxFunction? FindMethod(string name)
+    {
+        if (Class.Methods.ContainsKey(name))
+        {
+            return Class.Methods[name];
+        }
+
+        return null;
+    }
+
+    public override string ToString()
+    {
+        return $"instance of {Class}";
+    }
+}

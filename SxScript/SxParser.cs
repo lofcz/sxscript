@@ -1,4 +1,5 @@
 using SxScript.Exceptions;
+using SxScript.SxFFI;
 using SxScript.SxStatements;
 
 namespace SxScript;
@@ -30,8 +31,10 @@ public class SxParser<T>
         parse          → declaration * EOF ;
         declaration    → varDeclr
                          | funDeclr
+                         | classDeclr
                          | statement ;
         funDeclr       → (modifier)?* ("fn" | "func" | "function") function ;
+        classDeclr     → "class" IDENTIFIER "{"? function* "}" ;
         modifier       → "async" ;
         function       → IDENTIFIER "(" parameters? ")" block ;
         parameters     → IDENTIFIER ( "," IDENTIFIER )* ;                 
@@ -61,7 +64,7 @@ public class SxParser<T>
         printStmt      → "print" expression ";"? ;
         exprStmt       → expression ";"? ;     
         expression     → assignment ";" ;
-        assignment     → IDENTIFIER "=" assignment
+        assignment     → ( call "." )? IDENTIFIER "=" assignment
                          | logicOr 
                          | logicOr "?" ternary ;
         logicOr        → logicAnd ( "or" logicAnd )* ;
@@ -76,9 +79,9 @@ public class SxParser<T>
         postfix        → call
                        | ("++" | "--") primary
                        | primary ;
-        call           → "await"? primary ( "(" arguments? ")" )*                                
+        call           → "await"? primary ( "(" arguments? ")" | "." IDENTIFIER )* ;                
         arguments      → (expression ":")? expression ("," (expression ":")? expression ("=" expression)? )* ;               
-        primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil"
+        primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" | "this"
                        | "(" expression ")" | ( (modifier)?* ("fn" | "func" | "function")  "(" parameters? ")" block );
      */
 
@@ -89,6 +92,11 @@ public class SxParser<T>
             return VarDeclr();
         }
 
+        if (Match(SxTokenTypes.KeywordClass))
+        {
+            return ClassDeclr();
+        }
+
         if (Check(SxTokenTypes.KeywordFunction) && CheckNth(1, SxTokenTypes.Identifier))
         {
             return FunDeclr("function");
@@ -97,10 +105,32 @@ public class SxParser<T>
         return Statement();
     }
 
-    SxStatement FunDeclr(string kind)
+    SxClassStatement ClassDeclr()
     {
-        Match(SxTokenTypes.KeywordFunction);
-        
+        SxToken name = Consume(SxTokenTypes.Identifier, "Očekáván název třídy");
+
+        if (Match(SxTokenTypes.LeftBrace))
+        {
+            Consume(SxTokenTypes.LeftBrace, "Očekávána { za názvem v deklaraci třídy");
+        }
+
+        List<SxFunctionStatement> methods = new List<SxFunctionStatement>();
+        while (!Check(SxTokenTypes.RightBrace) && !IsAtEnd())
+        {
+            methods.Add(FunDeclr("metoda", false));
+        }
+
+        Consume(SxTokenTypes.RightBrace, "Očekávána } na konci deklarace třídy");
+        return new SxClassStatement(name, methods);
+    }
+
+    SxFunctionStatement FunDeclr(string kind, bool includeFnKeyword = true)
+    {
+        if (includeFnKeyword)
+        {
+            Match(SxTokenTypes.KeywordFunction);   
+        }
+
         if (Match(SxTokenTypes.KeywordAsync))
         {
             // async
@@ -468,6 +498,11 @@ public class SxParser<T>
                 return new SxAssignExpression(name, value);
             }
             
+            if (expr is SxGetExpression getExpr)
+            {
+                return new SxSetExpression(getExpr.Name, getExpr.Object, value);
+            }
+            
             // [todo] error, neplatný cíl pro přiřazení
         }
 
@@ -610,6 +645,11 @@ public class SxParser<T>
             {
                 expr = Arguments(expr);
             }
+            else if (Match(SxTokenTypes.Dot))
+            {
+                SxToken name = Consume(SxTokenTypes.Identifier, "Očekáván název člena za .");
+                expr = new SxGetExpression(name, expr);
+            }
             else
             {
                 break;
@@ -678,6 +718,11 @@ public class SxParser<T>
         if (Match(SxTokenTypes.Nill))
         {
             return new SxLiteralExpression(null);
+        }
+
+        if (Match(SxTokenTypes.KeywordThis))
+        {
+            return new SxThisExpression(Previous());
         }
 
         if (Match(SxTokenTypes.LeftParen))

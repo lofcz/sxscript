@@ -2,6 +2,13 @@ using SxScript.SxStatements;
 
 namespace SxScript.SxFFI;
 
+public enum SxFunctionTypes
+{
+    None,
+    Function,
+    Method
+}
+
 public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
 {
     public SxFunctionStatement Declaration { get; set; }
@@ -20,6 +27,13 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
         Statement = block;
         Await = true;
         Closure = closure;
+    }
+
+    public SxFunction Bind(SxInstance instance)
+    {
+        SxEnvironment environment = new SxEnvironment(Closure);
+        environment.DefineOrRedefineAndAssign("this", instance);
+        return new SxFunction(Declaration, Block, environment);
     }
     
     public object? Call(SxInterpreter interpreter)
