@@ -1,0 +1,9 @@
+fun thrice(fnRef) {
+  for (var i = 1; i <= 3; i++) {
+    fnRef(i);
+  }
+}
+
+thrice(fun (a) {
+  print a;
+});

@@ -119,6 +119,12 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
 
     public async Task<object> Visit(SxBlockStatement expr)
     {
+        if (!expr.GeneratesScope)
+        {
+            await Resolve(expr.Statements);
+            return null!;
+        }
+        
         BeginScope();
         await Resolve(expr.Statements);
         EndScope();
@@ -179,7 +185,7 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         await Resolve(expr.Condition);
         await Resolve(expr.Body);
         await Resolve(expr.Increment);
-
+        
         return null!;
     }
 
@@ -238,12 +244,23 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
 
     void Declare(SxToken token)
     {
+        if (token == null)
+        {
+            return;
+        }
+        
         if (Scopes.Count == 0)
         {
             return;
         }
 
         Dictionary<string, bool> scope = Scopes.Peek();
+
+        if (scope == null)
+        {
+            return;
+        }
+        
         if (!scope.ContainsKey(token.Lexeme))
         {
             scope.Add(token.Lexeme, false);   
@@ -252,6 +269,11 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
 
     void Define(SxToken token)
     {
+        if (token == null)
+        {
+            return;
+        }
+        
         if (Scopes.Count == 0)
         {
             return;
@@ -267,14 +289,29 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
     async Task ResolveFunction(SxFunctionStatement func)
     {
         BeginScope();
-        foreach (SxToken param in func.Pars.Select(x => x.Name))
+        foreach (SxToken param in func.FunctionExpression.Pars.Select(x => x.Name))
         {
             Declare(param);
             Define(param);
         }
 
-        await Resolve(func.Body);
+        await Resolve(func.FunctionExpression.Body);
         EndScope();
+    }
+    
+    public async Task<object> Visit(SxFunctionExpression expr)
+    {
+        BeginScope();
+        foreach (SxToken param in expr.Pars.Select(x => x.Name))
+        {
+            Declare(param);
+            Define(param);
+        }
+
+        await Resolve(expr.Body);
+        EndScope();
+
+        return null!;
     }
 
     void ResolveLocal(SxExpression expression, SxToken name)

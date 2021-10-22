@@ -347,6 +347,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return toRet;
     }
 
+    public async Task<object> Visit(SxFunctionExpression expr)
+    {
+        return new SxFunction(new SxFunctionStatement(null, expr), expr.Body, Environment);
+    }
+
     public async Task<object> Visit(SxArgumentDeclrExpression expr)
     {
         return null!;
@@ -443,7 +448,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxBlockStatement expr)
     {
-        await ExecuteBlockAsync(expr, expr.Statements, new SxEnvironment(Environment));
+        await ExecuteBlockAsync(expr, expr.Statements, expr.GeneratesScope ? new SxEnvironment(Environment) : Environment);
         return null!;
     }
 
@@ -516,7 +521,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxFunctionStatement expr)
     {
-        SxFunction fn = new SxFunction(expr, expr.Body, Environment);
+        SxFunction fn = new SxFunction(expr, expr.FunctionExpression.Body, Environment);
         Environment.SetIfDefined(expr.Name.Lexeme, fn);
         return null!;
     }

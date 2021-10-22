@@ -1,0 +1,11 @@
+fn f1(x) {
+    fn f2(x) {
+        fn f3(x) {
+            print(x);
+        }
+        f3(x);
+    }
+    f2(x);
+}
+
+f1("hello");

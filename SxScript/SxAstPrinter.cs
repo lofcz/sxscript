@@ -55,6 +55,11 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise("funkce", expr.Callee);
     }
 
+    public async Task<string> Visit(SxFunctionExpression expr)
+    {
+        return Parenthesise("anonymní funkce", expr.Body.Statements.Select(x => x.Expr).ToList());
+    }
+
     public async Task<string> Visit(SxArgumentDeclrExpression expr)
     {
         return Parenthesise("argument fce", expr.Modifier);
@@ -65,7 +70,7 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return await expression.Accept(this);
     }
 
-    string Parenthesise(string name, params SxExpression[] expressions)
+    string Parenthesise(string name, List<SxExpression> expressions)
     {
         StringBuilder sb = new StringBuilder();
         sb.Append("(").Append(name);
@@ -77,5 +82,10 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
 
         sb.Append(")");
         return sb.ToString();
+    }
+
+    string Parenthesise(string name, params SxExpression[] expressions)
+    {
+        return Parenthesise(name, expressions.ToList());
     }
 }

@@ -7,13 +7,14 @@ public class SxBlockStatement : SxStatement, SxStatement.ISxBreakableStatement, 
     public bool Continue { get; set; }
     public bool Return { get; set; }
     public object? ReturnValue { get; set; }
+    public bool GeneratesScope { get; set; }
     
     public override async Task<object?> Accept<T>(ISxStatementVisitor<T> visitor)
     {
         return await visitor.Visit(this);
     }
 
-    public SxBlockStatement(List<SxStatement> statements)
+    public SxBlockStatement(List<SxStatement> statements, bool generatesScope)
     {
         Statements = statements;
         Expr = null!;
@@ -21,5 +22,6 @@ public class SxBlockStatement : SxStatement, SxStatement.ISxBreakableStatement, 
         Continue = false;
         Return = false;
         ReturnValue = null;
+        GeneratesScope = generatesScope;
     }
 }

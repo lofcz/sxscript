@@ -24,7 +24,7 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
     
     public object? Call(SxInterpreter interpreter)
     {
-        object? val = interpreter.ExecuteBlock(Block, Declaration.Body.Statements, LocalEnvironment);
+        object? val = interpreter.ExecuteBlock(Block, Declaration.FunctionExpression.Body.Statements, LocalEnvironment);
         return val;
     }
 
@@ -33,7 +33,7 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
         LocalEnvironment = new SxEnvironment(Closure);
         int firstNamed = 0;
         
-        for (int i = 0; i < Declaration.Pars.Count; i++)
+        for (int i = 0; i < Declaration.FunctionExpression.Pars.Count; i++)
         {
             if (arguments?.Count > i && arguments?[i].Name != null)
             {
@@ -41,8 +41,8 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
                 break;
             }
             
-            object? resolvedValue = arguments?.Count > i ? arguments[i].Value : await interpreter.EvaluateAsync(Declaration.Pars[i].DefaultValue);
-            LocalEnvironment.Set(Declaration.Pars[i].Name.Lexeme, resolvedValue);
+            object? resolvedValue = arguments?.Count > i ? arguments[i].Value : await interpreter.EvaluateAsync(Declaration.FunctionExpression.Pars[i].DefaultValue);
+            LocalEnvironment.Set(Declaration.FunctionExpression.Pars[i].Name.Lexeme, resolvedValue);
         }
 
         for (int i = firstNamed; i < arguments?.Count; i++)

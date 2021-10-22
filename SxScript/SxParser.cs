@@ -8,6 +8,7 @@ public class SxParser<T>
     private List<SxToken> Tokens { get; set; }
     private int Current { get; set; }
     private int LoopDepth { get; set; }
+    public List<SxStatement> Statements { get; set; }
     
     public SxParser(List<SxToken> tokens)
     {
@@ -16,13 +17,13 @@ public class SxParser<T>
 
     public List<SxStatement> Parse()
     {
-        List<SxStatement> statements = new List<SxStatement>();
+        Statements = new List<SxStatement>();
         while (!IsAtEnd())
         {
-            statements.Add(Declaration());
+            Statements.Add(Declaration());
         }
 
-        return statements;
+        return Statements;
     }
     
     /*
@@ -78,7 +79,7 @@ public class SxParser<T>
         call           → "await"? primary ( "(" arguments? ")" )*                                
         arguments      → (expression ":")? expression ("," (expression ":")? expression ("=" expression)? )* ;               
         primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil"
-                       | "(" expression ")" ;
+                       | "(" expression ")" | ( (modifier)?* ("fn" | "func" | "function")  "(" parameters? ")" block );
      */
 
     SxStatement Declaration()
@@ -88,9 +89,9 @@ public class SxParser<T>
             return VarDeclr();
         }
 
-        if (Match(SxTokenTypes.KeywordFunction))
+        if (Check(SxTokenTypes.KeywordFunction) && CheckNth(1, SxTokenTypes.Identifier))
         {
-            return FunDeclr("funkce");
+            return FunDeclr("function");
         }
 
         return Statement();
@@ -98,12 +99,21 @@ public class SxParser<T>
 
     SxStatement FunDeclr(string kind)
     {
+        Match(SxTokenTypes.KeywordFunction);
+        
         if (Match(SxTokenTypes.KeywordAsync))
         {
             // async
         }
 
         SxToken name = Consume(SxTokenTypes.Identifier, $"Očekáván název {kind}");
+        SxFunctionExpression expr = FunctionBody("function");
+
+        return new SxFunctionStatement(name, expr);
+    }
+
+    SxFunctionExpression FunctionBody(string kind)
+    {
         Consume(SxTokenTypes.LeftParen, "Očekávána ( za deklarací signatury funkce");
         List<SxArgumentDeclrExpression> pars = new List<SxArgumentDeclrExpression>();
 
@@ -129,9 +139,10 @@ public class SxParser<T>
         Consume(SxTokenTypes.LeftBrace, "Očekávána { na začátku deklarace obsahu funkce");
         List<SxStatement> body = Block();
 
-        return new SxFunctionStatement(name, pars, body);
+        return new SxFunctionExpression(pars, body);
     }
 
+    
     SxStatement VarDeclr()
     {
         SxToken identifier = Consume(SxTokenTypes.Identifier, "Očekáván název proměnné");
@@ -150,7 +161,7 @@ public class SxParser<T>
         return new SxVarStatement(initialVal, identifier);
     }
 
-    SxStatement Statement()
+    SxStatement Statement(bool generateScope = true)
     {
         if (Match(SxTokenTypes.KeywordPrint))
         {
@@ -159,7 +170,7 @@ public class SxParser<T>
 
         if (Match(SxTokenTypes.LeftBrace))
         {
-            return new SxBlockStatement(Block());
+            return new SxBlockStatement(Block(), generateScope);
         }
 
         if (Match(SxTokenTypes.KeywordIf))
@@ -341,7 +352,7 @@ public class SxParser<T>
         }
 
         // [todo] loop depth inc
-        SxStatement statement = Statement();
+        SxStatement statement = Statement(false);
         return new SxForStatement(initializer, condition, increment, statement);
     }
 
@@ -676,9 +687,13 @@ public class SxParser<T>
             return new SxGroupingExpression(expr);
         }
 
+        if (Match(SxTokenTypes.KeywordFunction))
+        {
+            return FunctionBody("function");
+        }
+
         return null;
     }
-
 
     SxToken Consume(SxTokenTypes type, string errMsg)
     {
