@@ -4,13 +4,13 @@ namespace SxScript.SxSa;
 
 public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement.ISxStatementVisitor<object>
 {
-    public Stack<Dictionary<string, bool>> Scopes { get; set; }
+    public Stack<Dictionary<string, SxResolverVariable>> Scopes { get; set; }
     public SxInterpreter Interpreter { get; set; }
 
     public SxResolver(SxInterpreter interpreter)
     {
         Interpreter = interpreter;
-        Scopes = new Stack<Dictionary<string, bool>>();
+        Scopes = new Stack<Dictionary<string, SxResolverVariable>>();
     }
 
     public async Task<object> Visit(SxBinaryExpression expr)
@@ -54,15 +54,14 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
             int x = 0;
         }
 
-        ResolveLocal(expr, expr.Name);
+        ResolveLocal(expr, expr.Name, true);
         return null!;
     }
 
     public async Task<object> Visit(SxAssignExpression expr)
     {
         await Resolve(expr.Value);
-        ResolveLocal(expr, expr.Name);
-
+        ResolveLocal(expr, expr.Name, false);
         return null!;
     }
 
@@ -234,12 +233,20 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
 
     void BeginScope()
     {
-        Scopes.Push(new Dictionary<string, bool>());
+        Scopes.Push(new Dictionary<string, SxResolverVariable>());
     }
 
     void EndScope()
     {
-        Scopes.Pop();
+        Dictionary<string, SxResolverVariable> scope = Scopes.Pop();
+
+        foreach (KeyValuePair<string, SxResolverVariable> entry in scope)
+        {
+            if (entry.Value.State == SxResolverVariableStates.Defined)
+            {
+                // [todo] proměnná nebyla nikdy použita, warning
+            }
+        }
     }
 
     void Declare(SxToken token)
@@ -254,7 +261,7 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
             return;
         }
 
-        Dictionary<string, bool> scope = Scopes.Peek();
+        Dictionary<string, SxResolverVariable> scope = Scopes.Peek();
 
         if (scope == null)
         {
@@ -263,7 +270,7 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         
         if (!scope.ContainsKey(token.Lexeme))
         {
-            scope.Add(token.Lexeme, false);   
+            scope.Add(token.Lexeme, new SxResolverVariable(token, SxResolverVariableStates.Declared));   
         }
     }
 
@@ -279,10 +286,10 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
             return;
         }
 
-        Dictionary<string, bool> scope = Scopes.Peek();
+        Dictionary<string, SxResolverVariable> scope = Scopes.Peek();
         if (!scope.ContainsKey(token.Lexeme))
         {
-            scope.Add(token.Lexeme, true);   
+            scope.Add(token.Lexeme, new SxResolverVariable(token, SxResolverVariableStates.Defined));   
         }
     }
 
@@ -314,13 +321,21 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         return null!;
     }
 
-    void ResolveLocal(SxExpression expression, SxToken name)
+    void ResolveLocal(SxExpression expression, SxToken name, bool isUsed)
     {
         for (int i = Scopes.Count - 1; i >= 0; i--)
         {
-            if (Scopes.ToArray()[i].ContainsKey(name.Lexeme))
+            Dictionary<string, SxResolverVariable> castedScope = Scopes.ToArray()[i];
+            
+            if (castedScope.ContainsKey(name.Lexeme))
             {
                 Interpreter.Resolve(expression, Scopes.Count - 1 - i);
+
+                if (isUsed)
+                {
+                    castedScope[name.Lexeme].State = SxResolverVariableStates.Used;
+                }
+                
                 return;
             }
         }
