@@ -73,7 +73,7 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
     - [ ] async
     - [ ] public
     - [ ] private
-    - [ ] static
+    - [x] static
    - base types
     - [x] function 
     - [x] null / nill 
@@ -105,8 +105,8 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
 - OOP
  - [x] classes
  - [x] this
- - [ ] constructors
- - [ ] static methods
+ - [x] constructors
+ - [x] static methods
  - [ ] access modifiers (public, private)
  - [ ] inheritence
  - [ ] polymorphism
