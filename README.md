@@ -109,6 +109,7 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
  - [x] parameter by name `myFn(myParam: 1)`
 - misc
  - [x] local functions
+ - [x] anonymous functions (lambdas)
  - [ ] params `fn sum(params numbers)` 
  
 ### Notes
