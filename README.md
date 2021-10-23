@@ -91,7 +91,8 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
   - [x] assignment
   - [x] unary +, -
   - [x] binary +, -, *, /, %, ^
-  - [x] +=, *=, /=, -=, %=, ^=
+  - [x] compound assignment +=, *=, /=, -=, %=, ^=
+  - [ ] null coalescing ??, ??=
   - postfix  
    - [x] ++, --
    - [ ] arrays
