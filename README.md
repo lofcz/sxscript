@@ -108,7 +108,7 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
  - [x] constructors
  - [x] static methods
  - [ ] access modifiers (public, private)
- - [x] inheritence
+ - [x] inheritance
  - [ ] polymorphism
  - [ ] getters & setters
  - [ ] traits
