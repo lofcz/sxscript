@@ -1,0 +1,23 @@
+class BaseAnimal {
+
+}
+
+class Animal : BaseAnimal {
+    Sound = "animal sound";
+
+    MakeSound() {
+        return this.Sound;
+    }
+}
+
+class Dog : Animal {
+    Sound = "woof";
+}
+
+class Cat : Animal {
+    Sound = "meow";
+}
+
+print Animal().MakeSound();
+print Dog().MakeSound();
+print Cat().MakeSound();

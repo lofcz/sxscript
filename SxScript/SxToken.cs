@@ -46,7 +46,7 @@ namespace SxScript
         KeywordThis,
         KeywordVar,
         KeywordWhile,
-        KeywordSuper,
+        KeywordBase,
         KeywordBreak,
         KeywordContinue,
         KeywordGoto,

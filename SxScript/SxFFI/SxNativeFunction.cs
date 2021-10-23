@@ -11,7 +11,7 @@ public abstract class SxNativeAsyncBase : SxExpression.ISxAsyncCallable
 public abstract class SxNativeBase : SxExpression.ISxCallable
 {
     public abstract object? Call(SxInterpreter interpreter, List<SxResolvedCallArgument?> arguments);
-    public object? Call(SxInterpreter interpreter)
+    public async Task<object?> Call(SxInterpreter interpreter)
     {
         return null!;
     }

@@ -35,7 +35,7 @@ public class SxParser<T>
                          | classDeclr
                          | statement ;
         funDeclr       → (modifier)?* ("fn" | "func" | "function") function ;
-        classDeclr     → "class" IDENTIFIER "{"? (memberFunction | memberDeclr)* "}" ;
+        classDeclr     → "class" IDENTIFIER (":" IDENTIFIER)? "{"? (memberFunction | memberDeclr)* "}" ;
         modifier       → "async" ;
         memberFunction → "static"? function ;
         function       → IDENTIFIER "(" parameters? ")" block ;
@@ -84,8 +84,10 @@ public class SxParser<T>
                        | primary ;
         call           → "await"? primary ( "(" arguments? ")" | "." IDENTIFIER )* ;                
         arguments      → (expression ":")? expression ("," (expression ":")? expression ("=" expression)? )* ;               
-        primary        → NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" | "this"
-                       | "(" expression ")" | ( (modifier)?* ("fn" | "func" | "function")  "(" parameters? ")" block );
+        primary        → NUMBER 
+                       | STRING | IDENTIFIER | "true" | "false" | "nil" | "this"
+                       | "(" expression ")" | ( (modifier)?* ("fn" | "func" | "function")  "(" parameters? ")" block )
+                       | "base" "." IDENTIFIER ;
      */
 
     SxStatement Declaration()
@@ -112,6 +114,13 @@ public class SxParser<T>
     {
         SxToken name = Consume(SxTokenTypes.Identifier, "Očekáván název třídy");
 
+        SxVarExpression superclass = null;
+        if (Match(SxTokenTypes.Colon))
+        {
+            Consume(SxTokenTypes.Colon, "Očekávána : pro zdědění třídy");
+            superclass = new SxVarExpression(Consume(SxTokenTypes.Identifier, "Očekáván název třídy při dědění za :"));
+        }
+        
         if (Match(SxTokenTypes.LeftBrace))
         {
             Consume(SxTokenTypes.LeftBrace, "Očekávána { za názvem v deklaraci třídy");
@@ -136,14 +145,14 @@ public class SxParser<T>
                     methods.Add(fn);   
                 }
             }
-            else
+            else if (next == SxTokenTypes.Equal)
             {
                 fields.Add(MemberDeclr());
             }
         }
 
         Consume(SxTokenTypes.RightBrace, "Očekávána } na konci deklarace třídy");
-        return new SxClassStatement(name, methods, fields, classMethods);
+        return new SxClassStatement(name, methods, fields, classMethods, superclass);
     }
 
     SxTokenTypes? NextTokenNotAccessModifierOrIdentifier(int i = 1)
@@ -794,6 +803,15 @@ public class SxParser<T>
         if (Match(SxTokenTypes.KeywordFunction))
         {
             return FunctionBody("function");
+        }
+
+        if (Match(SxTokenTypes.KeywordBase))
+        {
+            SxToken keyword = Previous();
+            Consume(SxTokenTypes.Dot, "Očekávána . za base");
+            SxToken method = Consume(SxTokenTypes.Identifier, "Očekáván název metody nadřazené třídy");
+
+            return new SxSuperExpression(keyword, method);
         }
 
         return null;

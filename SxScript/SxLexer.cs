@@ -14,10 +14,10 @@ namespace SxScript
             {"false", SxTokenTypes.False}, {"for", SxTokenTypes.KeywordFor}, {"fn", SxTokenTypes.KeywordFunction}, {"fun", SxTokenTypes.KeywordFunction},
             {"func", SxTokenTypes.KeywordFunction}, {"function", SxTokenTypes.KeywordFunction}, {"if", SxTokenTypes.KeywordIf},
             {"null", SxTokenTypes.Nill}, {"nill", SxTokenTypes.Nill}, {"or", SxTokenTypes.KeywordOr}, {"print", SxTokenTypes.KeywordPrint},
-            {"return", SxTokenTypes.KeywordReturn}, {"super", SxTokenTypes.KeywordSuper}, {"this", SxTokenTypes.KeywordThis}, {"true", SxTokenTypes.True},
+            {"return", SxTokenTypes.KeywordReturn}, {"super", SxTokenTypes.KeywordBase}, {"this", SxTokenTypes.KeywordThis}, {"true", SxTokenTypes.True},
             {"var", SxTokenTypes.KeywordVar}, {"while", SxTokenTypes.KeywordWhile}, {"break", SxTokenTypes.KeywordBreak}, {"continue", SxTokenTypes.KeywordContinue},
             {"goto", SxTokenTypes.KeywordGoto}, {"async", SxTokenTypes.KeywordAsync}, {"await", SxTokenTypes.KeywordAwait}, {"public", SxTokenTypes.KeywordPublic},
-            {"private", SxTokenTypes.KeywordPrivate}, {"static", SxTokenTypes.KeywordStatic}
+            {"private", SxTokenTypes.KeywordPrivate}, {"static", SxTokenTypes.KeywordStatic}, {"base", SxTokenTypes.KeywordBase}
         };
 
         public SxLexer(string source)

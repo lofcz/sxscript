@@ -1,0 +1,15 @@
+class Animal {
+    Sound = "animal sound";
+
+    MakeSound() {
+        return this.Sound;
+    }
+}
+
+class Cat : Animal {
+    MakeSound() {
+        return base.MakeSound() + " overriden by Cat";
+    }
+}
+
+print Cat().MakeSound();

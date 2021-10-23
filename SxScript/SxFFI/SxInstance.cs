@@ -39,6 +39,11 @@ public class SxInstance
             return fn.Bind(this);
         }
 
+        if (Class.Superclass != null)
+        {
+            return Class.Superclass.Get(name);
+        }
+
         // [todo] nedefinovaná vlastnost
         return null;
     }
@@ -48,6 +53,14 @@ public class SxInstance
         if (Class.Methods.ContainsKey(name))
         {
             return Class.Methods[name];
+        }
+
+        if (Class.Superclass != null)
+        {
+            if (Class.Superclass.Methods.ContainsKey(name))
+            {
+                return Class.Superclass.Methods[name];
+            }
         }
 
         return null;

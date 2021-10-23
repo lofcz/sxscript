@@ -75,6 +75,11 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise("lokální kontext", new SxLiteralExpression(expr.Keyword));
     }
 
+    public async Task<string> Visit(SxSuperExpression expr)
+    {
+        return Parenthesise("volání předka", new SxLiteralExpression(expr.Keyword));
+    }
+
     public async Task<string> Visit(SxArgumentDeclrExpression expr)
     {
         return Parenthesise("argument fce", expr.Modifier);

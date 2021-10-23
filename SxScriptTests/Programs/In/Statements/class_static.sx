@@ -2,6 +2,11 @@ class Math {
     static Pow(n) {
         return n * n;
     }
+    
+    NonStaticPow(n) {
+        return n * n;
+    }
 }
 
 print Math.Pow(3)
+print Math.NonStaticPow(3);

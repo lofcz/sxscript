@@ -18,11 +18,12 @@ public abstract class SxExpression
       Task<T> Visit(SxGetExpression expr);
       Task<T> Visit(SxSetExpression expr);
       Task<T> Visit(SxThisExpression expr);
+      Task<T> Visit(SxSuperExpression expr);
    }
    
    public interface ISxCallable
    {
-      object? Call(SxInterpreter interpreter);
+      Task<object?> Call(SxInterpreter interpreter);
       Task<object?> PrepareAndCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments);
       Task PrepareCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments);
    }

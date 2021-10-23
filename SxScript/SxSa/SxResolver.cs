@@ -222,8 +222,30 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         Declare(expr.Name);
         Define(expr.Name);
 
+        bool canResolveSuperclass = true;
+        
+        if (expr.Superclass != null && expr.Name.Lexeme == expr.Superclass.Name.Lexeme)
+        {
+            // [todo] class Foo : Foo {}, uživatel se pokusil zdědit třídu samu od sebe
+            expr.SuperclassIsValid = false;
+            canResolveSuperclass = false;
+        }
+        
+        if (expr.Superclass != null && canResolveSuperclass)
+        {
+            CurrentClass = SxClassTypes.Subclass;
+            await Resolve(expr.Superclass);
+        }
+        
+        
         BeginScope();
         Scopes.Peek()?.Add("this", new SxResolverVariable(expr.Name, SxResolverVariableStates.Used));
+
+        if (expr.Superclass != null && expr.SuperclassIsValid)
+        {
+            BeginScope();
+            Scopes.Peek().Add("base", new SxResolverVariable(new SxToken(SxTokenTypes.Identifier, "true", true, 0), SxResolverVariableStates.Used));
+        }
 
         foreach (SxFunctionStatement method in expr.Methods)
         {
@@ -250,6 +272,12 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         }
 
         EndScope();
+
+        if (expr.Superclass != null && expr.SuperclassIsValid)
+        {
+            EndScope();
+        }
+        
         CurrentClass = enclosingClass;
         return null!;
     }
@@ -403,6 +431,22 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
             expr.IsInvalid = true;
             // [todo] pokus o použití this mimo kontext třídy
             return null!;
+        }
+        
+        ResolveLocal(expr, expr.Keyword, true);
+        return null!;
+    }
+
+    public async Task<object> Visit(SxSuperExpression expr)
+    {
+        if (CurrentClass == SxClassTypes.None)
+        {
+            // [todo] base není možné použít mimo třídu
+        }
+
+        if (CurrentClass == SxClassTypes.Class)
+        {
+            // [todo] base není možné použít ve třídě, která nedědí z žádné třídy
         }
         
         ResolveLocal(expr, expr.Keyword, true);

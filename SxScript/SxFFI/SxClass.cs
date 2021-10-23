@@ -6,12 +6,14 @@ public class SxClass : SxInstance, SxExpression.ISxCallable
     public Dictionary<string, SxFunction> Methods { get; set; }
     public List<SxResolvedCallArgument> Arguments { get; set; }
     public Dictionary<string, object> Fields { get; set; }
+    public SxClass? Superclass { get; set; }
     
-    public SxClass(SxClass metaclass, string name, Dictionary<string, SxFunction> methods, Dictionary<string, object> fields) : base(metaclass)
+    public SxClass(SxClass metaclass, SxClass? superclass, string name, Dictionary<string, SxFunction> methods, Dictionary<string, object> fields) : base(metaclass)
     {
         Name = name;
         Methods = methods;
         Fields = fields;
+        Superclass = superclass;
     }
 
     public override string ToString()
@@ -19,7 +21,7 @@ public class SxClass : SxInstance, SxExpression.ISxCallable
         return Name;
     }
 
-    public object? Call(SxInterpreter interpreter)
+    public async Task<object?> Call(SxInterpreter interpreter)
     {
         return null!;
     }
@@ -43,6 +45,11 @@ public class SxClass : SxInstance, SxExpression.ISxCallable
         if (Methods.ContainsKey(name))
         {
             return Methods[name];
+        }
+
+        if (Superclass != null)
+        {
+            return Superclass.FindMethod(name);
         }
 
         return null;

@@ -13,7 +13,8 @@ public enum SxFunctionTypes
 public enum SxClassTypes
 {
     None,
-    Class
+    Class,
+    Subclass
 }
 
 public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
@@ -45,9 +46,9 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
         return new SxFunction(Declaration, Block, environment, IsContructor);
     }
     
-    public object? Call(SxInterpreter interpreter)
+    public async Task<object?> Call(SxInterpreter interpreter)
     {
-        object? val = interpreter.ExecuteBlock(Block, Declaration.FunctionExpression.Body.Statements, LocalEnvironment);
+        object? val = await interpreter.ExecuteBlockAsync(Block, Declaration.FunctionExpression.Body.Statements, LocalEnvironment);
 
         if (IsContructor)
         {
@@ -60,7 +61,7 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
     public async Task<object?> PrepareAndCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)
     {
         await PrepareCallAsync(interpreter, arguments);
-        return Call(interpreter);
+        return await Call(interpreter);
     }
 
     public async Task PrepareCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)
@@ -89,6 +90,12 @@ public class SxFunction : SxExpression.ISxCallable, SxStatement.ISxCallStatement
 
             object? resolvedValue = arguments[i].Value;
             LocalEnvironment.Set(arguments[i]?.Name ?? "", resolvedValue);
+        }
+
+        object? rfThis = Closure.GetAt(0, "this");
+        if (rfThis != null)
+        {
+            LocalEnvironment.Set("this", rfThis);
         }
     }
 }

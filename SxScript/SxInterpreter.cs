@@ -24,6 +24,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public SxStatement.ISxLoopingStatement CurrentLoopStatement = null;
     public SxStatement.ISxCallStatement CurrentCallStatement = null;
     public Dictionary<SxExpression, int> Locals = new Dictionary<SxExpression, int>();
+    public SxBlockStatement CurrentBlock { get; set; }
 
     public SxInterpreter()
     {
@@ -41,8 +42,8 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     
     public async Task<object?> Visit(SxBinaryExpression expr)
     {
-        object right = await EvaluateAsync(expr.Right);
-        object left = await EvaluateAsync(expr.Left);
+        object? right = await EvaluateAsync(expr.Right);
+        object? left = await EvaluateAsync(expr.Left);
 
         if ((right is string rightStr || left is string leftStr) && expr.Operator.Type == SxTokenTypes.Plus)
         {
@@ -388,6 +389,33 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return LookUpVariable(expr.Keyword, expr)!;
     }
 
+    public async Task<object> Visit(SxSuperExpression expr)
+    {
+        SxFunction? method = null;
+        
+        if (Locals.TryGetValue(expr, out int distance))
+        {
+            object? supercls = Environment.GetAt(distance, "base");
+            if (supercls is SxClass superclsCasted)
+            {
+                object? obj = Environment.GetAt(distance - 1, "this");
+                if (obj is SxInstance instance)
+                {
+                    method = superclsCasted.FindMethod(expr.Method.Lexeme);
+                    if (method != null)
+                    {
+                        //method.Closure = Environment;
+                        return method.Bind(instance);   
+                    }
+                }
+            }
+        }
+        
+        // [todo] pokus o zavolání nedefinované metody na předkovi
+
+        return null!;
+    }
+
     public async Task<object> Visit(SxArgumentDeclrExpression expr)
     {
         return null!;
@@ -578,6 +606,8 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
             {
                 sxFn.Block.Return = true;
                 sxFn.Block.ReturnValue = val;
+                CurrentBlock.Return = true;
+                CurrentBlock.ReturnValue = val;
             }
         }
 
@@ -586,7 +616,32 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxClassStatement expr)
     {
+        object superclass = null;
+        bool superclassOk = true;
+        SxClass? castedSuperclass = null;
+        
+        if (expr.Superclass != null && expr.SuperclassIsValid)
+        {
+            superclass = await EvaluateAsync(expr.Superclass);
+
+            if (superclass is not SxClass superCls)
+            {
+                // [todo] uživatel se pokusil zdědit třídu od něčeho jiného než třídy
+                superclassOk = false;
+            }
+            else
+            {
+                castedSuperclass = superCls;
+            }
+        }
+        
         Environment.DefineOrRedefineEmpty(expr.Name.Lexeme);
+
+        if (expr.Superclass != null && expr.SuperclassIsValid)
+        {
+            Environment = new SxEnvironment(Environment);
+            Environment.DefineOrRedefineAndAssign("base", superclass);
+        }
         
         Dictionary<string, SxFunction> classMethods = new Dictionary<string, SxFunction>();
         Dictionary<string, SxFunction> methods = new Dictionary<string, SxFunction>();
@@ -609,8 +664,13 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
             fields.Add(field.Name.Lexeme, await EvaluateAsync(field.Expr));
         }
 
-        SxClass metaclass = new SxClass(null, $"{expr.Name.Lexeme} metaclass", classMethods, fields);
-        SxClass cls = new SxClass(metaclass, expr.Name.Lexeme, methods, fields);
+        SxClass metaclass = new SxClass(null, castedSuperclass, $"{expr.Name.Lexeme} metaclass", classMethods, fields);
+        SxClass cls = new SxClass(metaclass, castedSuperclass, expr.Name.Lexeme, methods, fields);
+
+        if (expr.Superclass != null && expr.SuperclassIsValid)
+        {
+            Environment = Environment.Enclosing!;
+        }
         
         Environment.DefineOrRedefineAndAssign(expr.Name.Lexeme, cls);
         return null!;
@@ -702,10 +762,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     {
         bool didReturn = false;
 
-        SxEnvironment previous = null;
-        previous = Environment;
+        SxEnvironment previous = Environment;
         Environment = environment;
 
+        SxBlockStatement previousBlock = CurrentBlock;
+        CurrentBlock = blockStatement;
         foreach (SxStatement statement in statements)
         {
             await ExecuteAsync(statement);
@@ -721,6 +782,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         }
 
         Environment = previous;
+        CurrentBlock = previousBlock;
 
         if (didReturn)
         {
