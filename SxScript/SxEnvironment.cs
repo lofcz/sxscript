@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using SxScript.SxFFI;
 
 namespace SxScript;
 
@@ -11,12 +12,12 @@ public class SxEnvironment
     {
         Enclosing = enclosing;
     }
-    
-    public void Set(string name, object? value = null)
+
+    public void Set(string name, object? value = null, SxToken? op = null)
     {
         if (Variables.ContainsKey(name))
         {
-            Variables[name] = value;
+            Variables[name] = SxArithmetic.ResolveSetValue(Variables[name]!, value, op);
             return;
         }
         
@@ -34,33 +35,33 @@ public class SxEnvironment
     }
     
     // [todo] vyřešit co tady
-    public void SetIfDefined(string name, object? value = null)
+    public void SetIfDefined(string name, object? value = null, SxToken? op = null)
     {
         if (Variables.ContainsKey(name))
         {
-            Variables[name] = value;
+            Variables[name] = SxArithmetic.ResolveSetValue(Variables[name]!, value, op);
             return;
         }
 
         if (Enclosing == null)
         {
             // [todo] pokus o nastavení nedefinované proměnné
-            Set(name, value);
+            Set(name, value, op);
         }
 
-        Enclosing?.SetIfDefined(name, value);
+        Enclosing?.SetIfDefined(name, value, op);
     }
 
-    public void SetAtIfDefined(int distance, string name, object? value = null)
+    public void SetAtIfDefined(int distance, string name, object? value = null, SxToken? op = null)
     {
-        Ancestor(distance).SetIfDefined(name, value);
+        Ancestor(distance).SetIfDefined(name, value, op);
     }
     
-    public void SetIfDefinedToSelf(string name, object? value = null)
+    public void SetIfDefinedToSelf(string name, object? value = null, SxToken? op = null)
     {
         if (Variables.ContainsKey(name))
         {
-            Variables[name] = value;
+            Variables[name] = SxArithmetic.ResolveSetValue(Variables[name]!, value, op);
             return;
         }
 

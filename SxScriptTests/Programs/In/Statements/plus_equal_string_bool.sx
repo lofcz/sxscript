@@ -1,0 +1,3 @@
+n = "hello";
+n += true;
+print n;

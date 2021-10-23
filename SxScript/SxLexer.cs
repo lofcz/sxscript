@@ -88,6 +88,12 @@ namespace SxScript
                              AddToken(SxTokenTypes.PlusPlus);
                              break;
                          }
+
+                         if (Match('='))
+                         {
+                             AddToken(SxTokenTypes.PlusEqual);
+                             break;
+                         }
                          
                          AddToken(SxTokenTypes.Plus); 
                          break;
@@ -100,17 +106,41 @@ namespace SxScript
                              break;
                          }
                          
+                         if (Match('='))
+                         {
+                             AddToken(SxTokenTypes.MinusEqual);
+                             break;
+                         }
+                         
                          AddToken(SxTokenTypes.Minus);
                          break;
                      }
                      case '*':
-                         AddToken(SxTokenTypes.Star); break;
+                     {
+                         if (Match('='))
+                         {
+                             AddToken(SxTokenTypes.StarEqual);
+                             break;
+                         }
+                         
+                         AddToken(SxTokenTypes.Star);
+                         break;
+                     }
                      case '?':
                          AddToken(SxTokenTypes.Question); break;
                      case ':':
                          AddToken(SxTokenTypes.Colon); break;
                      case '%':
-                         AddToken(SxTokenTypes.Percent); break;
+                     {
+                         if (Match('='))
+                         {
+                             AddToken(SxTokenTypes.PercentEqual);
+                             break;
+                         }
+                         
+                         AddToken(SxTokenTypes.Percent);
+                         break;
+                     }
                      case '&':
                      {
                          if (Match('&'))
@@ -180,23 +210,40 @@ namespace SxScript
 
                          break;
                      }
-                     case '/':
+                     case '^':
                      {
-                         if (Match('/'))
+                         if (Match('='))
                          {
-                             while (Peek() != '\n' && !IsAtEnd())
-                             {
-                                 Step();
-                             }
-                             
-                             DiscardCurrentLexeme();
-                         }
-                         else
-                         {
-                             AddToken(SxTokenTypes.Slash);
+                             AddToken(SxTokenTypes.CaretEqual);
+                             break;
                          }
                          
+                         AddToken(SxTokenTypes.Caret);
                          break;
+                     }
+                     case '/':
+                     {
+                          if (Match('='))
+                          {
+                              AddToken(SxTokenTypes.SlashEqual);
+                              break;
+                          }
+                         
+                          if (Match('/'))
+                          {
+                              while (Peek() != '\n' && !IsAtEnd())
+                              {
+                                  Step();
+                              }
+                             
+                              DiscardCurrentLexeme();
+                          }
+                          else
+                          {
+                              AddToken(SxTokenTypes.Slash);
+                          }
+                         
+                          break;
                      }
                      case ' ':
                      case '\r':
@@ -285,7 +332,7 @@ namespace SxScript
             
             bool IsAlpha(char ch)
             {
-                return (ch is >= 'a' and <= 'z') || (ch is >= 'A' and <= 'Z') || ch is '_'; 
+                return char.IsLetter(ch) || ch is '_';
             }
 
             bool IsDigit(char ch)

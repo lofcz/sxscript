@@ -24,6 +24,13 @@ namespace SxScript
         ExclamationEqual, // !=
         Equal, // =
         EqualEqual, // ==
+        PlusEqual, // +=
+        MinusEqual, // -=
+        StarEqual, // *=
+        SlashEqual, // /=
+        PercentEqual, // %=
+        CaretEqual, // ^=
+        Caret, // ^
         Greater, // >
         Less, // <
         GreaterEqual, // >=

@@ -1,0 +1,7 @@
+class Number {
+    N = 5
+}
+
+number = Number();
+number.N += 20;
+print number.N;

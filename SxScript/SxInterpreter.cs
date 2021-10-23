@@ -90,7 +90,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     {
         AssertTypeOf(left, "Levá strana výrazu musí být int/double/bool", op, typeof(int), typeof(double), typeof(bool));
         AssertTypeOf(right, "Pravá strana výrazu musí být int/double/bool", op,typeof(int), typeof(double), typeof(bool));
-        
+
         return op.Type switch
         {
             SxTokenTypes.Plus => (object) ((dynamic) left + (dynamic) right),
@@ -98,6 +98,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
             SxTokenTypes.Star => (object) ((dynamic) left * (dynamic) right),
             SxTokenTypes.Slash => (object) ((dynamic) left / (dynamic) right),
             SxTokenTypes.Percent => (object) ((dynamic) left % (dynamic) right),
+            SxTokenTypes.Caret => (object) Math.Pow((dynamic) left, (dynamic) right),
             SxTokenTypes.Greater => (object) ((dynamic) left > (dynamic) right),
             SxTokenTypes.GreaterEqual => (object) ((dynamic) left >= (dynamic) right),
             SxTokenTypes.Less => (object) ((dynamic) left < (dynamic) right),
@@ -215,11 +216,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         object? val = await EvaluateAsync(expr.Value);
         if (Locals.TryGetValue(expr, out int distance))
         {
-            Environment.SetAtIfDefined(distance, expr.Name.Lexeme, val);
+            Environment.SetAtIfDefined(distance, expr.Name.Lexeme, val, expr.Operator);
         }
         else
         {
-            Globals.SetIfDefined(expr.Name.Lexeme, val);
+            Globals.SetIfDefined(expr.Name.Lexeme, val, expr.Operator);
         }
         
         return null!;
@@ -371,7 +372,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         if (obj is SxInstance instance)
         {
             object val = await EvaluateAsync(expr.Value);
-            instance.Set(expr.Name, val);
+            instance.Set(expr.Name, val, expr.Operator);
             return val;
         }
 

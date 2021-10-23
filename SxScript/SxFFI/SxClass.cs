@@ -5,10 +5,10 @@ public class SxClass : SxInstance, SxExpression.ISxCallable
     public string Name { get; set; }
     public Dictionary<string, SxFunction> Methods { get; set; }
     public List<SxResolvedCallArgument> Arguments { get; set; }
-    public Dictionary<string, object> Fields { get; set; }
+    public Dictionary<string, object?> Fields { get; set; }
     public SxClass? Superclass { get; set; }
     
-    public SxClass(SxClass metaclass, SxClass? superclass, string name, Dictionary<string, SxFunction> methods, Dictionary<string, object> fields) : base(metaclass)
+    public SxClass(SxClass metaclass, SxClass? superclass, string name, Dictionary<string, SxFunction> methods, Dictionary<string, object?> fields) : base(metaclass)
     {
         Name = name;
         Methods = methods;

@@ -3,22 +3,22 @@ namespace SxScript.SxFFI;
 public class SxInstance
 {
     public SxClass Class { get; set; }
-    public Dictionary<string, object> Fields { get; set; }
+    public Dictionary<string, object?> Fields { get; set; }
 
     public SxInstance(SxClass? cls)
     {
         if (cls != null)
         {
             Class = cls;
-            Fields = new Dictionary<string, object>(cls.Fields);   
+            Fields = new Dictionary<string, object?>(cls.Fields);   
         }
     }
 
-    public void Set(SxToken name, object value)
+    public void Set(SxToken name, object value, SxToken? op = null)
     {
         if (Fields.ContainsKey(name.Lexeme))
         {
-            Fields[name.Lexeme] = value;
+            Fields[name.Lexeme] = SxArithmetic.ResolveSetValue(Fields[name.Lexeme]!, value, op);
         }
         else
         {

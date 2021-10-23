@@ -67,16 +67,16 @@ public class SxParser<T>
         printStmt      → "print" expression ";"? ;
         exprStmt       → expression ";"? ;     
         expression     → assignment ";" ;
-        assignment     → ( call "." )? IDENTIFIER "=" assignment
+        assignment     → ( call "." )? IDENTIFIER ("=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=") assignment
                          | logicOr 
-                         | logicOr "?" ternary ;
+                         | logicOr "?" ternary ;                 
         logicOr        → logicAnd ( "or" logicAnd )* ;
         logicAnd       → equality ( "and" equality )* ;                    
         ternary        → expression ":" expression ;
         equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         term           → factor ( ( "-" | "+" ) factor )* ;
-        factor         → unary ( ( "%" | "/" | "*" ) unary )* ;
+        factor         → unary ( ( "%" | "/" | "*" | "^" ) unary )* ;
         unary          → ( "!" | "-" | "+" ) unary
                        | postfix ;
         postfix        → call
@@ -555,20 +555,20 @@ public class SxParser<T>
     {
         SxExpression expr = LogicalOr();
         
-        if (Match(SxTokenTypes.Equal))
+        if (Match(SxTokenTypes.Equal) || Match(SxTokenTypes.PlusEqual) || Match(SxTokenTypes.MinusEqual) || Match(SxTokenTypes.StarEqual) || Match(SxTokenTypes.SlashEqual) || Match(SxTokenTypes.PercentEqual) || Match(SxTokenTypes.CaretEqual))
         {
-            SxToken equals = Previous();
+            SxToken op = Previous();
             SxExpression value = Assignment();
 
             if (expr is SxVarExpression varExpr)
             {
                 SxToken name = varExpr.Name;
-                return new SxAssignExpression(name, value);
+                return new SxAssignExpression(name, value, op);
             }
             
             if (expr is SxGetExpression getExpr)
             {
-                return new SxSetExpression(getExpr.Name, getExpr.Object, value);
+                return new SxSetExpression(getExpr.Name, getExpr.Object, value, op);
             }
             
             // [todo] error, neplatný cíl pro přiřazení
@@ -665,7 +665,7 @@ public class SxParser<T>
     SxExpression Factor()
     {
         SxExpression expr = Unary();
-        while (Match(SxTokenTypes.Slash, SxTokenTypes.Star, SxTokenTypes.Percent))
+        while (Match(SxTokenTypes.Slash, SxTokenTypes.Star, SxTokenTypes.Percent, SxTokenTypes.Caret))
         {
             SxToken op = Previous();
             SxExpression right = Unary();
