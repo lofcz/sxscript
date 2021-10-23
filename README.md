@@ -90,8 +90,8 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
  - operators
   - [x] assignment
   - [x] unary +, -
-  - [x] binary +, -, *, /, %  
-  - [ ] +=, *=, /=, -=
+  - [x] binary +, -, *, /, %, ^
+  - [x] +=, *=, /=, -=, %=, ^=
   - postfix  
    - [x] ++, --
    - [ ] arrays
