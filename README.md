@@ -83,10 +83,7 @@ Check https://github.com/lofcz/sxscript/tree/master/SxScriptTests/Programs for m
     - [x] bool
     - [x] object
     - [x] true, false
-    - [ ] class
-    - [ ] array
-    - [ ] dictionary
-    - [ ] list   
+    - [x] array (hashmap)
  - operators
   - [x] assignment
   - [x] unary +, -
