@@ -1,0 +1,12 @@
+class A {
+    X = 10;
+}
+
+class B {
+    AInst = A();
+}
+
+b = B();
+print b.AInst.X;
+b.AInst.X = 20;
+print b.AInst.X;

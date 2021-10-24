@@ -19,6 +19,7 @@ public abstract class SxExpression
       Task<T> Visit(SxSetExpression expr);
       Task<T> Visit(SxThisExpression expr);
       Task<T> Visit(SxSuperExpression expr);
+      Task<T> Visit(SxArrayExpression expr);
    }
    
    public interface ISxCallable

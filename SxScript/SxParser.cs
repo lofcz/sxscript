@@ -41,7 +41,7 @@ public class SxParser<T>
         function       → IDENTIFIER "(" parameters? ")" block ;
         memberDeclr    → IDENTIFIER ("=" expression)? ";"? ;   
         parameters     → IDENTIFIER ( "," IDENTIFIER )* ;                 
-        varDeclr       → "var"? IDENTIFIER ("=" expression)? ";"? ;                   
+        varDeclr       → "var"? declarator ("=" expression)? ";"? ;                   
         statement      → exprStmt
                          | ifStmt
                          | whileStmt
@@ -61,13 +61,12 @@ public class SxParser<T>
         continueStmt   → "continue" ";"? ;            
         forStmt        → "for" "("? (varDeclr | exprStmt | ";"?) expression? ";"? expression? ";"? ")"? statement ;          
         whileStmt      → "while" "("? expression ")"? statement ;            
-        ifStmt         → "if" "("? expression ")"? statement
-                         ( "else" statement )? ;                 
+        ifStmt         → "if" "("? expression ")"? statement ( "else" statement )? ;                 
         block          → "{" declaration * "}" ;        
         printStmt      → "print" expression ";"? ;
         exprStmt       → expression ";"? ;     
         expression     → assignment ";" ;
-        assignment     → ( call "." )? IDENTIFIER ("=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=") assignment
+        assignment     → ( call "." )? (postfix)? IDENTIFIER ("=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=") assignment
                          | logicOr 
                          | logicOr "?" ternary ;                 
         logicOr        → logicAnd ( "or" logicAnd )* ;
@@ -78,16 +77,19 @@ public class SxParser<T>
         term           → factor ( ( "-" | "+" ) factor )* ;
         factor         → unary ( ( "%" | "/" | "*" | "^" ) unary )* ;
         unary          → ( "!" | "-" | "+" ) unary
-                       | postfix ;
+                        | postfix ;
         postfix        → call
-                       | ("++" | "--") primary
-                       | primary ;
-        call           → "await"? primary ( "(" arguments? ")" | "." IDENTIFIER )* ;                
-        arguments      → (expression ":")? expression ("," (expression ":")? expression ("=" expression)? )* ;               
+                        | primary ("++" | "--")
+                        | "[" expression? "]" postfix
+                        | primary ;
+        call           → "await"? primary ( "(" arguments? ")" | "." declarator )* ;                
+        arguments      → (expression ":")? expression ("," (expression ":")? expression ("=" expression)? )* ;
+        declarator     → IDENTIFIER ("[" expression? "]")?*               
         primary        → NUMBER 
-                       | STRING | IDENTIFIER | "true" | "false" | "nil" | "this"
-                       | "(" expression ")" | ( (modifier)?* ("fn" | "func" | "function")  "(" parameters? ")" block )
-                       | "base" "." IDENTIFIER ;
+                        | STRING | IDENTIFIER | "true" | "false" | "nil" | "this"
+                        | "(" expression ")" | ( (modifier)?* ("fn" | "func" | "function")  "(" parameters? ")" block )
+                        | "[" expression? ("," expression)?* "]"
+                        | "base" "." IDENTIFIER ;
      */
 
     SxStatement Declaration()
@@ -110,6 +112,53 @@ public class SxParser<T>
         return Statement();
     }
 
+    SxArrayExpression ArrayDeclarator(SxArrayExpression? parent = null)
+    {
+        SxArrayExpression arrayAccess = parent ?? new SxArrayExpression(new List<SxExpression>(), null, null);
+        if (Match(SxTokenTypes.LeftBracket))
+        {
+            if (Match(SxTokenTypes.RightBracket))
+            {
+                
+            }
+            else
+            {
+                SxExpression expr = Expression();
+                arrayAccess.ArrayExpr?.Add(expr);
+                Consume(SxTokenTypes.RightBracket, "Očekávána ] na konci přístupu k poli");
+            }
+
+            if (Check(SxTokenTypes.LeftBracket))
+            {
+                return ArrayDeclarator(arrayAccess);
+            }
+        }
+
+        return arrayAccess;
+    }
+
+    SxArrayExpression DeclaratorArrayPart()
+    {
+        SxArrayExpression? arrayExpression = null;
+        if (Check(SxTokenTypes.LeftBracket))
+        {
+            arrayExpression = ArrayDeclarator();
+        }
+
+        return arrayExpression;
+    }
+    
+    SxExpression Declarator(SxToken? name)
+    {
+        if (name == null)
+        {
+            name = Consume(SxTokenTypes.Identifier, "Očekáván název proměnné");
+        }
+        
+        SxArrayExpression? arrayExpression = DeclaratorArrayPart();
+        return new SxVarExpression(name, arrayExpression, null);
+    }
+
     SxClassStatement ClassDeclr()
     {
         SxToken name = Consume(SxTokenTypes.Identifier, "Očekáván název třídy");
@@ -118,7 +167,7 @@ public class SxParser<T>
         if (Match(SxTokenTypes.Colon))
         {
             Consume(SxTokenTypes.Colon, "Očekávána : pro zdědění třídy");
-            superclass = new SxVarExpression(Consume(SxTokenTypes.Identifier, "Očekáván název třídy při dědění za :"));
+            superclass = new SxVarExpression(Consume(SxTokenTypes.Identifier, "Očekáván název třídy při dědění za :"), null, null);
         }
         
         if (Match(SxTokenTypes.LeftBrace))
@@ -563,12 +612,12 @@ public class SxParser<T>
             if (expr is SxVarExpression varExpr)
             {
                 SxToken name = varExpr.Name;
-                return new SxAssignExpression(name, value, op);
+                return new SxAssignExpression(name, value, op, null, varExpr.ArrayExpr);
             }
             
             if (expr is SxGetExpression getExpr)
             {
-                return new SxSetExpression(getExpr.Name, getExpr.Object, value, op);
+                return new SxSetExpression(getExpr.Name, getExpr.Object, value, op, null, getExpr.ArrayExpr);
             }
             
             // [todo] error, neplatný cíl pro přiřazení
@@ -689,14 +738,38 @@ public class SxParser<T>
         return Postfix();
     }
 
-    SxExpression Postfix()
+    SxExpression Postfix(SxExpression? parent = null)
     {
-        SxExpression expr = Call();
+        SxExpression expr = parent ?? Call();
         
+        if (Match(SxTokenTypes.LeftBracket))
+        {
+            SxToken op = Previous();
+            SxPostfixExpression finalExpr;
+
+            if (Match(SxTokenTypes.RightBracket))
+            {
+                finalExpr = new SxPostfixExpression(op, expr, null);
+            }
+            else
+            {
+                SxExpression arrayExpr = Expression();
+                Consume(SxTokenTypes.RightBracket, "Očekáván ] na konci přístupu k poli");
+                finalExpr = new SxPostfixExpression(op, expr, arrayExpr);
+            }
+
+            if (Check(SxTokenTypes.LeftBracket))
+            {
+                return Postfix(finalExpr);
+            }
+
+            return finalExpr;
+        }
+
         if (Match(SxTokenTypes.PlusPlus, SxTokenTypes.MinusMinus))
         {
             SxToken op = Previous();
-            return new SxPostfixExpression(op, expr);
+            return new SxPostfixExpression(op, expr, null);
         }
 
         return expr;
@@ -716,7 +789,14 @@ public class SxParser<T>
             else if (Match(SxTokenTypes.Dot))
             {
                 SxToken name = Consume(SxTokenTypes.Identifier, "Očekáván název člena za .");
-                expr = new SxGetExpression(name, expr);
+                SxArrayExpression arrayExpression = null;
+                
+                if (Check(SxTokenTypes.LeftBracket))
+                {
+                    arrayExpression = DeclaratorArrayPart();
+                }
+                
+                expr = new SxGetExpression(name, expr, arrayExpression);
             }
             else
             {
@@ -770,7 +850,7 @@ public class SxParser<T>
 
         if (Match(SxTokenTypes.Identifier))
         {
-            return new SxVarExpression(Previous());
+            return Declarator(Previous()); // new SxVarExpression(Previous());
         }
 
         if (Match(SxTokenTypes.True))
@@ -812,6 +892,26 @@ public class SxParser<T>
             SxToken method = Consume(SxTokenTypes.Identifier, "Očekáván název metody nadřazené třídy");
 
             return new SxSuperExpression(keyword, method);
+        }
+
+        if (Match(SxTokenTypes.LeftBracket))
+        {
+            if (Match(SxTokenTypes.RightBracket))
+            {
+                return new SxArrayExpression(null, null, null);
+            }
+
+            List<SxExpression> values = new List<SxExpression>();
+            SxExpression expr = Expression();
+            values.Add(expr);
+
+            while (Match(SxTokenTypes.Comma))
+            {
+                values.Add(Expression());
+            }
+            
+            Consume(SxTokenTypes.RightBracket, "Očekávána ] na konci pole");
+            return new SxArrayExpression(values, null, null);
         }
 
         return null;

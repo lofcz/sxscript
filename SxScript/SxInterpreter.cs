@@ -29,17 +29,11 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public SxInterpreter()
     {
         Environment = Globals;
-        Globals.SetIfDefined("clock", new SxNativeFunction<DateTime>(() =>
-        {
-            return DateTime.Now;
-        }));
-        
-        Globals.SetIfDefined("async_clock", new SxNativeAsyncFunction<DateTime>(async () =>
-        {
-            return await Task.Run(() => DateTime.Now);
-        }));
+        Globals.SetIfDefined("clock", new SxNativeFunction<DateTime>(() => { return DateTime.Now; }));
+
+        Globals.SetIfDefined("async_clock", new SxNativeAsyncFunction<DateTime>(async () => { return await Task.Run(() => DateTime.Now); }));
     }
-    
+
     public async Task<object?> Visit(SxBinaryExpression expr)
     {
         object? right = await EvaluateAsync(expr.Right);
@@ -54,23 +48,23 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return val;
     }
 
-    public async Task<object> Visit(SxUnaryExpression expr)
+    public async Task<object?> Visit(SxUnaryExpression expr)
     {
-        object right = await EvaluateAsync(expr.Expr);
+        object? right = await EvaluateAsync(expr.Expr);
         switch (expr.Operator.Type)
         {
             case SxTokenTypes.Minus:
             {
                 if (right is double dbl)
                 {
-                    return -dbl;   
+                    return -dbl;
                 }
 
                 if (right is int it)
                 {
                     return -it;
                 }
-                
+
                 break;
             }
             case SxTokenTypes.Plus:
@@ -89,7 +83,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public object? PerformArithmeticOperation(object left, object right, SxToken op)
     {
         AssertTypeOf(left, "Levá strana výrazu musí být int/double/bool", op, typeof(int), typeof(double), typeof(bool));
-        AssertTypeOf(right, "Pravá strana výrazu musí být int/double/bool", op,typeof(int), typeof(double), typeof(bool));
+        AssertTypeOf(right, "Pravá strana výrazu musí být int/double/bool", op, typeof(int), typeof(double), typeof(bool));
 
         return op.Type switch
         {
@@ -115,9 +109,9 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         {
             return false;
         }
-        
+
         Type objT = obj.GetType();
-        
+
         for (int i = 0; i < types.Length; i++)
         {
             if (objT == types[i])
@@ -127,7 +121,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         }
 
         return false;
-    } 
+    }
 
     public bool ObjectIsEqual(object? left, object? right)
     {
@@ -143,7 +137,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
         return left.Equals(right);
     }
-    
+
     public bool ObjectIsTruthy(object? obj)
     {
         if (obj == null)
@@ -179,25 +173,72 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return expr.Value;
     }
 
-    public async Task<object> Visit(SxGroupingExpression expr)
+    public async Task<object?> Visit(SxGroupingExpression expr)
     {
         return await EvaluateAsync(expr.Expr);
     }
 
     public object? LookUpVariable(SxToken token, SxExpression expression)
     {
+        object? val = null;
+
         if (Locals.TryGetValue(expression, out int distance))
         {
-            return Environment.GetAt(distance, token.Lexeme);
+            val = Environment.GetAt(distance, token.Lexeme);
+        }
+        else
+        {
+            val = Globals.Get(token.Lexeme);
         }
 
-        return Globals.Get(token.Lexeme);
+        object? ReturnArrayValue(SxVarExpression? varExpression, SxArray array)
+        {
+            if (varExpression == null || varExpression.ArrayExpr == null)
+            {
+                return null;
+            }
+
+            Evaluate(varExpression.ArrayExpr);
+            if (varExpression.ArrayExpr?.ArrayExprResolved != null)
+            {
+                return array.GetValueChained(varExpression.ArrayExpr.ArrayExprResolved);
+            }
+
+            return null;
+        }
+
+        if (expression is SxVarExpression varExpression)
+        {
+            if (varExpression.ArrayExpr != null)
+            {
+                if (val is SxArray array)
+                {
+                    return ReturnArrayValue(varExpression, array);
+                }
+
+                if (val is SxInstance inst)
+                {
+                    //return inst.Fields;
+
+                    if (varExpression.ArrayName != null)
+                    {
+                        object? field = inst.Fields[varExpression.ArrayName.Lexeme];
+                        if (field is SxArray fieldArray)
+                        {
+                            return ReturnArrayValue(varExpression, fieldArray);
+                        }
+                    }
+                }
+            }
+        }
+
+        return val;
     }
 
     // expr ? caseTrue : caseFalse
-    public async Task<object> Visit(SxTernaryExpression expr)
+    public async Task<object?> Visit(SxTernaryExpression expr)
     {
-        object iff = await EvaluateAsync(expr.Expr);
+        object? iff = await EvaluateAsync(expr.Expr);
         if (iff is bool bl)
         {
             return await EvaluateAsync(bl ? expr.CaseTrue : expr.CaseFalse);
@@ -205,10 +246,39 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
         return await EvaluateAsync(expr.CaseTrue);
     }
-    
+
     public async Task<object> Visit(SxVarExpression expr)
     {
         return LookUpVariable(expr.Name, expr)!;
+    }
+
+    async Task<List<object?>?> ResolveArray(SxArrayExpression? arrayExpression)
+    {
+        if (arrayExpression == null)
+        {
+            return null;
+        }
+
+        List<object?> resolvedAccess = new List<object?>();
+
+        if (arrayExpression.ArrayExpr != null)
+        {
+            for (int i = 0; i < arrayExpression.ArrayExpr.Count; i++)
+            {
+                if (arrayExpression.ArrayExpr[i] == null!)
+                {
+                    resolvedAccess.Add(null);
+                }
+                else
+                {
+                    object? obj = await EvaluateAsync(arrayExpression.ArrayExpr[i]);
+                    resolvedAccess.Add(obj);
+                }
+            }
+        }
+
+        arrayExpression.ArrayExprResolved = resolvedAccess;
+        return resolvedAccess;
     }
 
     public async Task<object> Visit(SxAssignExpression expr)
@@ -216,19 +286,19 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         object? val = await EvaluateAsync(expr.Value);
         if (Locals.TryGetValue(expr, out int distance))
         {
-            Environment.SetAtIfDefined(distance, expr.Name.Lexeme, val, expr.Operator);
+            Environment.SetAtIfDefined(distance, expr.Name.Lexeme, val, expr.Operator, expr.ArrayExpr == null ? null : await ResolveArray(expr.ArrayExpr));
         }
         else
         {
-            Globals.SetIfDefined(expr.Name.Lexeme, val, expr.Operator);
+            Globals.SetIfDefined(expr.Name.Lexeme, val, expr.Operator, expr.ArrayExpr == null ? null : await ResolveArray(expr.ArrayExpr));
         }
-        
+
         return null!;
     }
 
-    public async Task<object> Visit(SxLogicalExpression expr)
+    public async Task<object?> Visit(SxLogicalExpression expr)
     {
-        object left = await EvaluateAsync(expr.Left);
+        object? left = await EvaluateAsync(expr.Left);
 
         if (expr.Operator.Type == SxTokenTypes.KeywordOr)
         {
@@ -248,11 +318,40 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return await EvaluateAsync(expr.Right);
     }
 
-    public async Task<object> Visit(SxPostfixExpression expr)
+    public async Task<object?> Visit(SxPostfixExpression expr)
     {
-        object right = await EvaluateAsync(expr.Expr);
-        object val = right;
-        
+        if (expr.Expr == null! && expr.Operator.Type == SxTokenTypes.LeftBracket)
+        {
+            SxArray? array = new SxArray(null);
+            if (expr.Expr is SxVarExpression arrayDeclr)
+            {
+                Environment.SetIfDefined(arrayDeclr.Name.Lexeme, array);
+            }
+
+            return array;
+        }
+
+        if (expr.Expr != null && expr.Operator.Type == SxTokenTypes.LeftBracket)
+        {
+            if (expr.PostfixExpr != null)
+            {
+                object? arrayCandidate = await EvaluateAsync(expr.Expr);
+                if (arrayCandidate is SxArray array)
+                {
+                    object? index = await EvaluateAsync(expr.PostfixExpr);
+                    if (array.IndexedValues.ContainsKey(index))
+                    {
+                        return array.IndexedValues[index]!;
+                    }
+
+                    return null!;
+                }
+            }
+        }
+
+        object? right = await EvaluateAsync(expr.Expr!);
+        object? val = right;
+
         switch (expr.Operator.Type)
         {
             case SxTokenTypes.MinusMinus:
@@ -260,7 +359,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 if (right is double dbl)
                 {
                     dbl--;
-                    val = dbl;   
+                    val = dbl;
                 }
 
                 if (right is int it)
@@ -268,7 +367,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                     it--;
                     val = it;
                 }
-                
+
                 break;
             }
             case SxTokenTypes.PlusPlus:
@@ -276,7 +375,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 if (right is double dbl)
                 {
                     dbl++;
-                    val = dbl;   
+                    val = dbl;
                 }
 
                 if (right is int it)
@@ -284,23 +383,23 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                     it++;
                     val = it;
                 }
-                
+
                 break;
             }
         }
 
         if (expr.Expr is SxVarExpression varExpr)
         {
-            Environment.SetIfDefined(varExpr.Name.Lexeme, val);   
+            Environment.SetIfDefined(varExpr.Name.Lexeme, val);
         }
-        
+
         return val;
     }
 
     public async Task<object?> Visit(SxCallExpression expr)
     {
-        object callee = await EvaluateAsync(expr.Callee);
-        
+        object? callee = await EvaluateAsync(expr.Callee);
+
         CallDepth++;
         CallStack.Push(expr.Callee);
 
@@ -308,7 +407,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         {
             CurrentCallStatement = callable;
         }
-        
+
         object? toRet = null!;
         List<SxResolvedCallArgument> arguments = new List<SxResolvedCallArgument>();
 
@@ -325,13 +424,13 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 }
                 else
                 {
-                    argName = (await EvaluateAsync(argument.Name))?.ToString() ?? null;   
+                    argName = (await EvaluateAsync(argument.Name))?.ToString() ?? null;
                 }
             }
-            
+
             arguments.Add(new SxResolvedCallArgument(argVal, argName));
         }
-        
+
         if (callee is SxExpression.ISxCallable fn)
         {
             // [todo] remove me
@@ -355,24 +454,66 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxGetExpression expr)
     {
-        object obj = await EvaluateAsync(expr.Object);
+
+        if (expr.Object is SxVarExpression varExpression)
+        {
+            varExpression.ArrayExpr = expr.ArrayExpr;
+            varExpression.ArrayName = expr.Name;
+        }
+
+        object? obj = await EvaluateAsync(expr.Object);
         if (obj is SxInstance instance)
         {
-            return instance.Get(expr.Name)!;
+            if (expr.ArrayExpr == null)
+            {
+                return instance.Get(expr.Name)!;   
+            }
+
+            if (expr.ArrayExpr.ArrayExpr.Count > 0 && instance.Fields.ContainsKey(expr.Name.Lexeme))
+            {
+                object? val = instance.Fields[expr.Name.Lexeme];
+                List<object?> resolved = new List<object?>();
+
+                for (int i = 0; i < expr.ArrayExpr.ArrayExpr.Count; i++)
+                {
+                    object? r = await EvaluateAsync(expr.ArrayExpr.ArrayExpr[i]);
+                    resolved.Add(r);
+                }
+                
+                if (val is SxArray arr)
+                {
+                    return arr.GetValueChained(resolved)!;
+                }
+            }
+            
+            return instance;
         }
-        
+
+        if (expr.ArrayExpr != null)
+        {
+            return obj!;
+        }
+
         // [todo] pokus o přístup k vlastnosti na něčem jiném než instanci
 
         return null!;
     }
 
-    public async Task<object> Visit(SxSetExpression expr)
+    public async Task<object?> Visit(SxSetExpression expr)
     {
-        object obj = await EvaluateAsync(expr.Object);
+        object? obj = await EvaluateAsync(expr.Object);
         if (obj is SxInstance instance)
         {
-            object val = await EvaluateAsync(expr.Value);
-            instance.Set(expr.Name, val, expr.Operator);
+            object? val = await EvaluateAsync(expr.Value);
+            List<object?>? resolvedArray = null;
+
+            if (expr.ArrayExpr != null)
+            {
+                await EvaluateAsync(expr.ArrayExpr);
+                resolvedArray = expr.ArrayExpr.ArrayExprResolved;
+            }
+
+            instance.Set(expr.Name, val, expr.Operator, resolvedArray);
             return val;
         }
 
@@ -386,14 +527,14 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         {
             return null!;
         }
-        
+
         return LookUpVariable(expr.Keyword, expr)!;
     }
 
     public async Task<object> Visit(SxSuperExpression expr)
     {
         SxFunction? method = null;
-        
+
         if (Locals.TryGetValue(expr, out int distance))
         {
             object? supercls = Environment.GetAt(distance, "base");
@@ -406,15 +547,45 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                     if (method != null)
                     {
                         //method.Closure = Environment;
-                        return method.Bind(instance);   
+                        return method.Bind(instance);
                     }
                 }
             }
         }
-        
+
         // [todo] pokus o zavolání nedefinované metody na předkovi
 
         return null!;
+    }
+
+    public async Task<object> Visit(SxArrayExpression expr)
+    {
+        SxArray array = new SxArray(null);
+        List<object?> resolvedAccess = new List<object?>();
+        object? lastObj = null;
+
+        if (expr.ArrayExpr != null)
+        {
+            for (int i = 0; i < expr.ArrayExpr.Count; i++)
+            {
+                if (expr.ArrayExpr[i] == null!)
+                {
+                    array.IndexedValues[i] = null;
+                    resolvedAccess.Add(null);
+                }
+                else
+                {
+                    object? obj = await EvaluateAsync(expr.ArrayExpr[i]);
+                    lastObj = obj;
+                    resolvedAccess.Add(obj);
+                    array.IndexedValues[i] = obj;
+                }
+            }
+        }
+
+        expr.ArrayExprResolved = resolvedAccess;
+        expr.Array = array;
+        return array;
     }
 
     public async Task<object> Visit(SxArgumentDeclrExpression expr)
@@ -467,7 +638,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -475,17 +646,17 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     {
         return expression?.Accept(this) ?? null!;
     }
-    
-    public async Task<object> EvaluateAsync(SxExpression expression)
+
+    public async Task<object?> EvaluateAsync(SxExpression expression)
     {
         return await expression?.Accept(this)! ?? null!;
     }
-    
+
     public object Execute(SxStatement statement)
     {
         return statement.Accept(this);
     }
-    
+
     public async Task<object?> ExecuteAsync(SxStatement statement)
     {
         return await statement.Accept(this);
@@ -499,14 +670,14 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object?> Visit(SxPrintStatement expr)
     {
-        object val = await EvaluateAsync(expr.Expr);
+        object? val = await EvaluateAsync(expr.Expr);
         WriteLine(val);
         return null!;
     }
 
     public async Task<object> Visit(SxVarStatement expr)
     {
-        object val = await EvaluateAsync(expr.Expr);
+        object? val = await EvaluateAsync(expr.Expr);
         Environment.Set(expr.Name.Lexeme, val);
         return null!;
     }
@@ -523,7 +694,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         {
             if (expr.ThenBranch != null)
             {
-                await ExecuteAsync(expr.ThenBranch);   
+                await ExecuteAsync(expr.ThenBranch);
             }
         }
         else if (expr.ElseBranch != null)
@@ -539,7 +710,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         LoopDepth++;
         LoopStack.Push(expr.Body);
         CurrentLoopStatement = expr;
-        
+
         while (ObjectIsTruthy(await EvaluateAsync(expr.Expr)))
         {
             if (expr.Continue)
@@ -553,7 +724,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 expr.Break = false;
                 break;
             }
-            
+
             await ExecuteAsync(expr.Body);
         }
 
@@ -569,10 +740,10 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         {
             breakableStatement.Break = true;
         }
-        
+
         return null!;
     }
-    
+
     public async Task<object> Visit(SxContinueStatement expr)
     {
         CurrentLoopStatement.Continue = true;
@@ -580,7 +751,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         {
             breakableStatement.Continue = true;
         }
-        
+
         return null!;
     }
 
@@ -591,9 +762,9 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         return null!;
     }
 
-    public async Task<object> Visit(SxReturnStatement expr)
+    public async Task<object?> Visit(SxReturnStatement expr)
     {
-        object val = null!;
+        object? val = null!;
         if (expr.Value != null!)
         {
             val = await EvaluateAsync(expr.Value);
@@ -617,10 +788,10 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
     public async Task<object> Visit(SxClassStatement expr)
     {
-        object superclass = null;
+        object? superclass = null;
         bool superclassOk = true;
         SxClass? castedSuperclass = null;
-        
+
         if (expr.Superclass != null && expr.SuperclassIsValid)
         {
             superclass = await EvaluateAsync(expr.Superclass);
@@ -635,7 +806,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 castedSuperclass = superCls;
             }
         }
-        
+
         Environment.DefineOrRedefineEmpty(expr.Name.Lexeme);
 
         if (expr.Superclass != null && expr.SuperclassIsValid)
@@ -643,23 +814,23 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
             Environment = new SxEnvironment(Environment);
             Environment.DefineOrRedefineAndAssign("base", superclass);
         }
-        
+
         Dictionary<string, SxFunction> classMethods = new Dictionary<string, SxFunction>();
         Dictionary<string, SxFunction> methods = new Dictionary<string, SxFunction>();
-        Dictionary<string, object> fields = new Dictionary<string, object>();
+        Dictionary<string, object?> fields = new Dictionary<string, object?>();
 
         foreach (SxFunctionStatement classMethod in expr.ClassMethods)
         {
             SxFunction func = new SxFunction(classMethod, classMethod.FunctionExpression.Body, Environment, classMethod.Name.Lexeme == expr.Name.Lexeme);
             classMethods.Add(classMethod.Name.Lexeme, func);
         }
-        
+
         foreach (SxFunctionStatement method in expr.Methods)
         {
             SxFunction func = new SxFunction(method, method.FunctionExpression.Body, Environment, method.Name.Lexeme == expr.Name.Lexeme);
             methods.Add(method.Name.Lexeme, func);
         }
-        
+
         foreach (SxVarStatement field in expr.Fields)
         {
             fields.Add(field.Name.Lexeme, await EvaluateAsync(field.Expr));
@@ -672,7 +843,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         {
             Environment = Environment.Enclosing!;
         }
-        
+
         Environment.DefineOrRedefineAndAssign(expr.Name.Lexeme, cls);
         return null!;
     }
@@ -681,9 +852,9 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     {
         if (!Labels.TryGetValue(expr.Identifier.Lexeme, out _))
         {
-            Labels.Add(expr.Identifier.Lexeme, expr);   
+            Labels.Add(expr.Identifier.Lexeme, expr);
         }
-        
+
         await ExecuteAsync(expr.Statement);
         return null!;
     }
@@ -700,7 +871,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         LoopDepth++;
         LoopStack.Push(expr.Body);
         CurrentLoopStatement = expr;
-        
+
         await ExecuteAsync(expr.Initializer);
 
         while (ObjectIsTruthy(await EvaluateAsync(expr.Condition)))
@@ -716,7 +887,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 expr.Break = false;
                 break;
             }
-            
+
             await ExecuteAsync(expr.Body);
             await EvaluateAsync(expr.Increment);
         }
@@ -729,14 +900,14 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
     public object? ExecuteBlock(SxBlockStatement blockStatement, List<SxStatement> statements, SxEnvironment environment)
     {
         bool didReturn = false;
-        
+
         SxEnvironment previous = Environment;
         Environment = environment;
 
         foreach (SxStatement statement in statements)
         {
             Execute(statement);
-            
+
             if (blockStatement.Break || blockStatement.Continue || blockStatement.Return)
             {
                 blockStatement.Break = false;
@@ -746,7 +917,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 break;
             }
         }
-        
+
         Environment = previous;
 
         if (didReturn)
@@ -758,7 +929,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
 
         return null;
     }
-    
+
     public async Task<object?> ExecuteBlockAsync(SxBlockStatement blockStatement, List<SxStatement> statements, SxEnvironment environment)
     {
         bool didReturn = false;
@@ -771,7 +942,7 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
         foreach (SxStatement statement in statements)
         {
             await ExecuteAsync(statement);
-            
+
             if (blockStatement.Break || blockStatement.Continue || blockStatement.Return)
             {
                 blockStatement.Break = false;

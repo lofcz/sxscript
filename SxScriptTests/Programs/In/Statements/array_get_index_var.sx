@@ -1,0 +1,14 @@
+class A {
+    N = 5
+}
+
+class B {
+    N = 10
+}
+
+class C {
+    N = 20
+}
+
+arr = [A().N, B().N, C().N]
+print arr[2]

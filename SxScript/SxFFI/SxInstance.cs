@@ -14,8 +14,14 @@ public class SxInstance
         }
     }
 
-    public void Set(SxToken name, object value, SxToken? op = null)
+    public void Set(SxToken name, object? value, SxToken? op = null, List<object?>? resolvedArrayExpression = null)
     {
+        if (resolvedArrayExpression != null)
+        {
+            SxArrayHelper.PerformSetArray(Fields[name.Lexeme], name.Lexeme, value, op, resolvedArrayExpression);
+            return;
+        }
+        
         if (Fields.ContainsKey(name.Lexeme))
         {
             Fields[name.Lexeme] = SxArithmetic.ResolveSetValue(Fields[name.Lexeme]!, value, op);

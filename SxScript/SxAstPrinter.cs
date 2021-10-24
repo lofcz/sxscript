@@ -80,6 +80,11 @@ public class SxAstPrinter : SxExpression.ISxExpressionVisitor<string>
         return Parenthesise("volání předka", new SxLiteralExpression(expr.Keyword));
     }
 
+    public async Task<string> Visit(SxArrayExpression expr)
+    {
+        return Parenthesise("pole", expr.ArrayExpr);
+    }
+
     public async Task<string> Visit(SxArgumentDeclrExpression expr)
     {
         return Parenthesise("argument fce", expr.Modifier);

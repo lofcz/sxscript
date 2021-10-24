@@ -453,6 +453,22 @@ public class SxResolver : SxExpression.ISxExpressionVisitor<object>, SxStatement
         return null!;
     }
 
+    public async Task<object> Visit(SxArrayExpression expr)
+    {
+        if (expr.ArrayExpr != null)
+        {
+            foreach (SxExpression? ex in expr.ArrayExpr)
+            {
+                if (ex != null!)
+                {
+                    await Resolve(ex);         
+                }
+            }
+        }
+
+        return null!;
+    }
+
     void ResolveLocal(SxExpression expression, SxToken name, bool isUsed)
     {
         for (int i = Scopes.Count - 1; i >= 0; i--)

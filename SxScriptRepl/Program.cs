@@ -68,7 +68,7 @@ namespace SxScriptRepl
 
                     if (exprStatements.Count == 1 && exprStatements[0] is SxExpressionStatement exprStmt)
                     {
-                        object obj = await interpreter.EvaluateAsync(exprStmt.Expr);
+                        object? obj = await interpreter.EvaluateAsync(exprStmt.Expr);
                         Console.WriteLine($"Evaluováno na: {obj}");
                     }
                     else

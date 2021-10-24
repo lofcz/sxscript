@@ -13,11 +13,22 @@ public class SxEnvironment
         Enclosing = enclosing;
     }
 
-    public void Set(string name, object? value = null, SxToken? op = null)
+    void PerformSet(string name, object? value = null, SxToken? op = null, List<object?>? resolvedArrayExpression = null)
+    {
+        if (resolvedArrayExpression != null)
+        {
+            SxArrayHelper.PerformSetArray(Variables[name], name, value, op, resolvedArrayExpression);
+            return;
+        }
+        
+        Variables[name] = SxArithmetic.ResolveSetValue(Variables[name]!, value, op);
+    }
+
+    public void Set(string name, object? value = null, SxToken? op = null, List<object?>? resolvedArrayExpression = null)
     {
         if (Variables.ContainsKey(name))
         {
-            Variables[name] = SxArithmetic.ResolveSetValue(Variables[name]!, value, op);
+            PerformSet(name, value, op, resolvedArrayExpression);
             return;
         }
         
@@ -35,43 +46,26 @@ public class SxEnvironment
     }
     
     // [todo] vyřešit co tady
-    public void SetIfDefined(string name, object? value = null, SxToken? op = null)
+    public void SetIfDefined(string name, object? value = null, SxToken? op = null, List<object?>? resolvedArrayExpression = null)
     {
         if (Variables.ContainsKey(name))
         {
-            Variables[name] = SxArithmetic.ResolveSetValue(Variables[name]!, value, op);
+            PerformSet(name, value, op, resolvedArrayExpression);
             return;
         }
 
         if (Enclosing == null)
         {
             // [todo] pokus o nastavení nedefinované proměnné
-            Set(name, value, op);
+            Set(name, value, op, resolvedArrayExpression);
         }
 
-        Enclosing?.SetIfDefined(name, value, op);
+        Enclosing?.SetIfDefined(name, value, op, resolvedArrayExpression);
     }
 
-    public void SetAtIfDefined(int distance, string name, object? value = null, SxToken? op = null)
+    public void SetAtIfDefined(int distance, string name, object? value = null, SxToken? op = null, List<object?>? resolvedArrayExpression = null)
     {
-        Ancestor(distance).SetIfDefined(name, value, op);
-    }
-    
-    public void SetIfDefinedToSelf(string name, object? value = null, SxToken? op = null)
-    {
-        if (Variables.ContainsKey(name))
-        {
-            Variables[name] = SxArithmetic.ResolveSetValue(Variables[name]!, value, op);
-            return;
-        }
-
-        if (Enclosing == null)
-        {
-            // [todo] pokus o nastavení nedefinované proměnné
-            Set(name, value);
-        }
-
-        Enclosing?.SetIfDefined(name, value);
+        Ancestor(distance).SetIfDefined(name, value, op, resolvedArrayExpression);
     }
 
     public object? Get(string name)
