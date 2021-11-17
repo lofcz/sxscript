@@ -32,7 +32,7 @@ public class SxInstance
         }
     }
 
-    public object? Get(SxToken name)
+    public virtual object? Get(SxToken name)
     {
         if (Fields.TryGetValue(name.Lexeme, out object? val))
         {

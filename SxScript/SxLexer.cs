@@ -25,7 +25,7 @@ namespace SxScript
             Source = source;
         }
 
-        public List<SxToken> Tokenize()
+        public List<SxToken> Tokenize(bool includeNewlines = false)
         {
             int line = 1;
             int pos = 0;
@@ -251,9 +251,20 @@ namespace SxScript
                          DiscardCurrentLexeme();
                          break;
                      case '\n':
+                     {
                          line++;
-                         DiscardCurrentLexeme();
-                         break;
+
+                         if (!includeNewlines)
+                         {
+                             DiscardCurrentLexeme();    
+                         }
+                         else
+                         {
+                             AddToken(SxTokenTypes.Eol);
+                         }
+                         
+                         break;   
+                     }
                      case '\"':
                      {
                          while (!(Peek() == '\"' && Peek(0) != '\\') && !IsAtEnd())

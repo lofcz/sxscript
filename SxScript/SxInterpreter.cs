@@ -477,6 +477,16 @@ public class SxInterpreter : SxExpression.ISxExpressionVisitor<object>, SxStatem
                 for (int i = 0; i < expr.ArrayExpr.ArrayExpr.Count; i++)
                 {
                     object? r = await EvaluateAsync(expr.ArrayExpr.ArrayExpr[i]);
+                    if (r == null)
+                    {
+                        if (expr.ArrayExpr.ArrayExpr[i] is SxVarExpression varExpr)
+                        {
+                            if (Locals.TryGetValue(expr.ArrayExpr.ArrayExpr[i], out int distance))
+                            {
+                                r = Environment.GetAt(distance, varExpr.Name.Lexeme);
+                            }   
+                        }
+                    }
                     resolved.Add(r);
                 }
                 

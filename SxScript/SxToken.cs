@@ -62,7 +62,10 @@ namespace SxScript
         KeywordStatic,
         KeywordPublic,
         KeywordPrivate,
-        Eof
+        Eof,
+        Eol, // \n
+        Error,
+        Length
     }
     
     public class SxToken

@@ -89,4 +89,29 @@ public class SxArray : SxInstance
     {
         return string.Join(", ", IndexedValues);
     }
+
+    public Task<object?> Call(SxInterpreter interpreter)
+    {
+        return null!;
+    }
+
+    public Task<object?> PrepareAndCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)
+    {
+        return null!;
+    }
+
+    public Task PrepareCallAsync(SxInterpreter interpreter, List<SxResolvedCallArgument> arguments)
+    {
+        return null!;
+    }
+    
+    public override object? Get(SxToken name)
+    {
+        if (name.Lexeme == "length")
+        {
+            return IndexedValues.Count;
+        }
+        
+        return null;
+    }
 }

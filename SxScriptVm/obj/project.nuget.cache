@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "wx6su2OVcC98M/ypp9eJjOVaq5zwIugl6k33tWAjtqgdTigw0Rj6HLoMHsdt1LjLYom+mYSKYTVblXc8l+GENg==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\lordo\\Documents\\github\\sxscript\\SxScriptVm\\SxScriptVm.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\lordo\\.nuget\\packages\\sxscript\\1.0.0\\sxscript.1.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

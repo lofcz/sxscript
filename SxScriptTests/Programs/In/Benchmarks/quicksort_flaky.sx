@@ -1,0 +1,39 @@
+class Quicksort {
+    Numbers = [];
+
+    Partition(start, end) {
+        pivot = this.Numbers[end];
+        index = start;
+        
+        for (i = start; i < end; i++) {
+            if (this.Numbers[i] <= pivot) {
+                temp = numbers[i];
+                this.Numbers[i] = this.Numbers[index];
+                this.Numbers[index] = temp;
+                index++;
+            }
+        }
+        
+        temp2 = this.Numbers[index];
+        this.Numbers[index] = this.Numbers[end];
+        this.Numbers[end] = temp2;
+        return index;
+    }
+    
+    SortPart(start, end) {
+        pivot = this.Partition(this.Numbers, start, end);
+        this.SortPart(this.Numbers, start, pivot - 1);
+        this.SortPart(this.Numbers, pivot + 1, end);
+    }
+
+    Sort(numbers) {
+        this.Numbers = numbers;
+        this.SortPart(0, numbers.length - 1);
+        for (i = 0; i < numbers.length; i++) {
+            print numbers[i];
+        }
+    }
+}
+
+qs = Quicksort();
+qs.Sort([5, 8, 1, 2, 3, 3, 0]);

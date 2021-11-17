@@ -328,6 +328,18 @@
       <None Update="Programs\Out\Statements\array_class2.sx">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+      <None Update="Programs\In\Benchmarks\quicksort_flaky.sx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Programs\Out\Benchmarks\quicksort_flaky.sx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Programs\In\Statements\array_length.sx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Programs\Out\Statements\array_length.sx">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

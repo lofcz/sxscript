@@ -32,9 +32,15 @@
 *.app
 SxScript/obj
 SxScript/bin
+SxScriptVm/obj
+SxScriptVm/bin
 .idea
 SxScriptTests/obj
 SxScriptTests/bin
 SxScript.sln.DotSettings.user
 SxScriptRepl/obj
 SxScriptRepl/bin
+SxScriptVmTests/obj
+SxScriptVmTests/bin
+SxScriptVmRepl/obj
+SxScriptVmRepl/bin

@@ -28,7 +28,7 @@ public class SxTestRunner
         SxScript.SxScript script = new SxScript.SxScript();
         string realOutput = await script.Interpret(input);
         sw.Stop();
-
+        
         bool correct = correctOutput.Replace("\r\n", "\n").Trim() == realOutput.Replace("\r\n", "\n").Trim();
         if (!correct)
         {

@@ -1,0 +1,15 @@
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\bin\Debug\net6.0\SxScriptVm.deps.json
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\bin\Debug\net6.0\SxScriptVm.dll
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\bin\Debug\net6.0\ref\SxScriptVm.dll
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\bin\Debug\net6.0\SxScriptVm.pdb
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\SxScriptVm.csproj.AssemblyReference.cache
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\SxScriptVm.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\SxScriptVm.AssemblyInfoInputs.cache
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\SxScriptVm.AssemblyInfo.cs
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\SxScriptVm.csproj.CoreCompileInputs.cache
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\SxScriptVm.dll
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\ref\SxScriptVm.dll
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\SxScriptVm.pdb
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\bin\Debug\net6.0\SxScript.dll
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\bin\Debug\net6.0\SxScript.pdb
+C:\Users\lordo\Documents\github\sxscript\SxScriptVm\obj\Debug\net6.0\SxScriptVm.csproj.CopyComplete
