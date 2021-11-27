@@ -3,15 +3,29 @@ namespace SxScriptVm;
 
 public enum OpCodes : byte
 {
-    OP_RETURN,
-    OP_CONSTANT_8,
-    OP_CONSTANT_16,
-    OP_CONSTANT_32,
-    OP_NEGATE,
-    OP_ADD,
-    OP_SUBSTRACT,
-    OP_MULTIPLY,
-    OP_DIVIDE
+    OP_RETURN = 0,
+    OP_CONSTANT_8 = 1,
+    OP_CONSTANT_16 = 2,
+    OP_CONSTANT_32 = 3,
+    OP_NEGATE = 4,
+    OP_ADD = 5,
+    OP_SUBSTRACT = 6,
+    OP_MULTIPLY = 7,
+    OP_DIVIDE = 8,
+    OP_NULL = 9,
+    OP_TRUE = 10,
+    OP_FALSE = 11,
+    OP_NOT = 12,
+    OP_EQUAL = 13,
+    OP_GREATER = 14,
+    OP_LESS = 15,
+    OP_NOT_EQUAL = 16,
+    OP_EQUAL_GREATER = 17,
+    OP_EQUAL_LESS = 18,
+    OP_CONSTANT_INT_ZERO = 19,
+    OP_CONSTANT_INT_ONE = 20,
+    OP_CONSTANT_INT_TWO = 21,
+    OP_CONSTANT_INT_MINUS_ONE = 22,
 }
 
 public class SxChunk
@@ -105,6 +119,76 @@ public class SxChunk
                     sb.Append("OP_MULTIPLY");
                     break;
                 }
+                case (byte)SxScriptVm.OpCodes.OP_TRUE:
+                {
+                    sb.Append("OP_TRUE");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_FALSE:
+                {
+                    sb.Append("OP_FALSE");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_NULL:
+                {
+                    sb.Append("OP_NULL");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_NOT:
+                {
+                    sb.Append("OP_NOT");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_EQUAL:
+                {
+                    sb.Append("OP_EQUAL");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_NOT_EQUAL:
+                {
+                    sb.Append("OP_NOT_EQUAL");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_GREATER:
+                {
+                    sb.Append("OP_GREATER");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_LESS:
+                {
+                    sb.Append("OP_LESS");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_EQUAL_GREATER:
+                {
+                    sb.Append("OP_EQUAL_GREATER");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_EQUAL_LESS:
+                {
+                    sb.Append("OP_EQUAL_LESS");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_CONSTANT_INT_ZERO:
+                {
+                    sb.Append("OP_CONSTANT_INT_ZERO");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_CONSTANT_INT_ONE:
+                {
+                    sb.Append("OP_CONSTANT_INT_ONE");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_CONSTANT_INT_TWO:
+                {
+                    sb.Append("OP_CONSTANT_INT_TWO");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_CONSTANT_INT_MINUS_ONE:
+                {
+                    sb.Append("OP_CONSTANT_INT_MINUS_ONE");
+                    break;
+                }
                 default:
                 {
                     sb.Append($"Neznámá instrukce - {OpCodes[i]}");
@@ -176,6 +260,33 @@ public class SxChunk
 
     public int PushConstant(object constant)
     {
+        if (constant.IsNumber())
+        {
+            if ((int) constant == -1)
+            {
+                PushOpCode(SxScriptVm.OpCodes.OP_CONSTANT_INT_MINUS_ONE);
+                return 0;
+            }
+            
+            if ((int) constant == 0)
+            {
+                PushOpCode(SxScriptVm.OpCodes.OP_CONSTANT_INT_ZERO);
+                return 0;
+            }
+            
+            if ((int) constant == 1)
+            {
+                PushOpCode(SxScriptVm.OpCodes.OP_CONSTANT_INT_ONE);
+                return 0;
+            }
+            
+            if ((int) constant == 2)
+            {
+                PushOpCode(SxScriptVm.OpCodes.OP_CONSTANT_INT_TWO);
+                return 0;
+            }
+        }
+        
         Constants.Add(constant);
         int index = Constants.Count - 1;
         

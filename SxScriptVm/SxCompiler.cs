@@ -6,6 +6,7 @@ public enum SxPrecedenceTypes
 {
     None,
     Assignment,
+    Conditional,
     Or,
     And,
     Equality,
@@ -54,9 +55,20 @@ public class SxCompiler
         Rules[(int) SxTokenTypes.Semicolon] = new SxParseRule(null, null, SxPrecedenceTypes.None);
         Rules[(int) SxTokenTypes.Slash] = new SxParseRule(null, Binary, SxPrecedenceTypes.Factor);
         Rules[(int) SxTokenTypes.Star] = new SxParseRule(null, Binary, SxPrecedenceTypes.Factor);
-        Rules[(int) SxTokenTypes.Exclamation] = new SxParseRule(null, null, SxPrecedenceTypes.None);
+        Rules[(int) SxTokenTypes.Exclamation] = new SxParseRule(Unary, null, SxPrecedenceTypes.None);
         Rules[(int) SxTokenTypes.Number] = new SxParseRule(Number, null, SxPrecedenceTypes.None);
         Rules[(int) SxTokenTypes.Eof] = new SxParseRule(null, null, SxPrecedenceTypes.None);
+        Rules[(int) SxTokenTypes.Question] = new SxParseRule(null, Conditional, SxPrecedenceTypes.Conditional);
+        Rules[(int) SxTokenTypes.Colon] = new SxParseRule(null, null, SxPrecedenceTypes.None);
+        Rules[(int) SxTokenTypes.True] = new SxParseRule(Literal, null, SxPrecedenceTypes.None);
+        Rules[(int) SxTokenTypes.False] = new SxParseRule(Literal, null, SxPrecedenceTypes.None);
+        Rules[(int) SxTokenTypes.Nill] = new SxParseRule(Literal, null, SxPrecedenceTypes.None);
+        Rules[(int) SxTokenTypes.ExclamationEqual] = new SxParseRule(null, Binary, SxPrecedenceTypes.Equality);
+        Rules[(int) SxTokenTypes.EqualEqual] = new SxParseRule(null, Binary, SxPrecedenceTypes.Equality);
+        Rules[(int) SxTokenTypes.Greater] = new SxParseRule(null, Binary, SxPrecedenceTypes.Comparison);
+        Rules[(int) SxTokenTypes.GreaterEqual] = new SxParseRule(null, Binary, SxPrecedenceTypes.Comparison);
+        Rules[(int) SxTokenTypes.Less] = new SxParseRule(null, Binary, SxPrecedenceTypes.Comparison);
+        Rules[(int) SxTokenTypes.LessEqual] = new SxParseRule(null, Binary, SxPrecedenceTypes.Comparison);
     }
 
     public SxChunk Compile(string code)
@@ -82,6 +94,28 @@ public class SxCompiler
         return Chunk;
     }
 
+    void Literal()
+    {
+        switch (PreviousToken.Type)
+        {
+            case SxTokenTypes.False:
+            {
+                Emit(OpCodes.OP_FALSE);
+                break;
+            }
+            case SxTokenTypes.True:
+            {
+                Emit(OpCodes.OP_TRUE);
+                break;
+            }
+            case SxTokenTypes.Nill:
+            {
+                Emit(OpCodes.OP_NULL);
+                break;
+            }
+        }
+    }
+
     void Number()
     {
         object val = PreviousToken.Literal;
@@ -104,6 +138,13 @@ public class SxCompiler
         Consume(SxTokenTypes.RightParen, "Očekáván ) za výrazem");
     }
 
+    void Conditional()
+    {
+        ParsePrecedence(SxPrecedenceTypes.Conditional);
+        Consume(SxTokenTypes.Colon, "Očekávána : za první částí ternárního operátoru");
+        ParsePrecedence(SxPrecedenceTypes.Assignment);
+    }
+
     void Unary()
     {
         SxTokenTypes type = PreviousToken.Type;
@@ -114,6 +155,15 @@ public class SxCompiler
             case SxTokenTypes.Minus:
             {
                 Emit(OpCodes.OP_NEGATE);
+                break;
+            }
+            case SxTokenTypes.Plus:
+            {
+                break;
+            }
+            case SxTokenTypes.Exclamation:
+            {
+                Emit(OpCodes.OP_NOT);
                 break;
             }
             default:
@@ -154,6 +204,36 @@ public class SxCompiler
             case SxTokenTypes.Star:
             {
                 Emit(OpCodes.OP_MULTIPLY);
+                break;
+            }
+            case SxTokenTypes.EqualEqual:
+            {
+                Emit(OpCodes.OP_EQUAL);
+                break;
+            }
+            case SxTokenTypes.ExclamationEqual:
+            {
+                Emit(OpCodes.OP_NOT_EQUAL);
+                break;
+            }
+            case SxTokenTypes.Greater:
+            {
+                Emit(OpCodes.OP_GREATER);
+                break;
+            }
+            case SxTokenTypes.Less:
+            {
+                Emit(OpCodes.OP_LESS);
+                break;
+            }
+            case SxTokenTypes.GreaterEqual:
+            {
+                Emit(OpCodes.OP_EQUAL_GREATER);
+                break;
+            }
+            case SxTokenTypes.LessEqual:
+            {
+                Emit(OpCodes.OP_EQUAL_LESS);
                 break;
             }
             default:
