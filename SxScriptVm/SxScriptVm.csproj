@@ -7,10 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="SxStructs" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\SxScript\SxScript.csproj" />
     </ItemGroup>
 

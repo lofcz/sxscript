@@ -13,6 +13,7 @@ public class SxVmInterpretResult
 {
     public SxInterpretResults Result { get; set; }
     public string StdOut { get; set; }
+    public string StdErr { get; set; }
     public string Bytecode { get; set; }
 }
 
@@ -23,6 +24,8 @@ public class SxVm
     public StringBuilder StdOutput { get; set; }
     public Stack<object?> Stack { get; set; }
     public bool RuntimeOk { get; set; }
+    public bool PrintLastExpr { get; set; }
+    public Dictionary<string, object?> Globals { get; set; }
 
     public SxVmInterpretResult Interpret(string code)
     {
@@ -32,10 +35,24 @@ public class SxVm
 
     public SxVmInterpretResult Interpret(SxChunk chunk)
     {
-        SxVmInterpretResult il = InterpretInternal(chunk);
+        SxVmInterpretResult il = new SxVmInterpretResult();
+        
+        if (chunk.HasCompileErrors)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (SxError err in chunk.CompileErrors)
+            {
+                sb.Append($"řádek {err.Line}: {err.Msg}\n");
+            }
+
+            il.Result = SxInterpretResults.CompileError;
+            il.StdErr = sb.ToString();
+            return il;
+        }
+        
+        il = InterpretInternal(chunk);
         il.StdOut = StdOutput.ToString();
         il.Bytecode = Chunk.Log();
-        
         return il;
     }
     
@@ -45,8 +62,10 @@ public class SxVm
         Chunk = chunk;
         Ip = 0;
         StdOutput = new StringBuilder();
-        Stack = new Stack<object>(256);
+        Stack = new Stack<object?>(256);
         RuntimeOk = true;
+        PrintLastExpr = false;
+        Globals = new Dictionary<string, object?>();
 
         while (RuntimeOk)
         {
@@ -56,7 +75,11 @@ public class SxVm
             {
                 case (byte) OpCodes.OP_RETURN:
                 {
-                    PrintLn(PopStack());
+                    if (PrintLastExpr)
+                    {
+                        PrintLn(Pop());   
+                    }
+                    
                     result.Result = SxInterpretResults.Ok;
                     return result;
                 }
@@ -64,7 +87,7 @@ public class SxVm
                 {
                     byte b = ReadByte();
                     object val = Chunk.Constants[b];
-                    PushStack(val);
+                    Push(val);
                     break;
                 }
                 case (byte) OpCodes.OP_CONSTANT_16:
@@ -77,7 +100,7 @@ public class SxVm
                 }
                 case (byte) OpCodes.OP_NEGATE:
                 { 
-                    object? obj = PopStack();
+                    object? obj = Pop();
 
                     if (obj == null)
                     {
@@ -85,11 +108,11 @@ public class SxVm
                     }
                     else if (obj.IsNumber())
                     {
-                        PushStack(-(dynamic)obj);   
+                        Push(-(dynamic)obj);   
                     }
                     else if (obj is bool b)
                     {
-                        PushStack(!b);
+                        Push(!b);
                     }
                     else
                     {
@@ -100,19 +123,27 @@ public class SxVm
                 }
                 case (byte) OpCodes.OP_ADD:
                 {
-                    object b = PopStack() ?? 0;
-                    object a = PopStack() ?? 0;
+                    object b = Pop() ?? 0;
+                    object a = Pop() ?? 0;
 
                     if (a.IsNumber() && b.IsNumber())
                     {
-                        PushStack((dynamic)a + (dynamic)b);
+                        Push((dynamic)a + (dynamic)b);
+                    }
+                    else if (a.IsString() && b.IsString())
+                    {
+                        Push((dynamic)a + (dynamic)b);
                     }
                     else if (a.ConvertibleToNumber() && b.ConvertibleToNumber())
                     {
                         a = a.ToNumber() ?? 0;
                         b = b.ToNumber() ?? 0;
                         
-                        PushStack((dynamic)a + (dynamic)b);
+                        Push((dynamic)a + (dynamic)b);
+                    }
+                    else if (a.IsString() || b.IsString())
+                    {
+                        Push(a.ToString() + b);
                     }
                     else
                     {
@@ -130,74 +161,91 @@ public class SxVm
                 }
                 case (byte) OpCodes.OP_SUBSTRACT:
                 {
-                    dynamic? b = PopStack();
-                    dynamic? a = PopStack();
-                    PushStack(a - b);
+                    dynamic? b = Pop();
+                    dynamic? a = Pop();
+                    Push(a - b);
                     break;
                 }
                 case (byte) OpCodes.OP_DIVIDE:
                 {
-                    dynamic? b = PopStack();
-                    dynamic? a = PopStack();
-                    PushStack(a / b);
+                    dynamic? b = Pop();
+                    dynamic? a = Pop();
+                    Push(a / b);
                     break;
                 }
                 case (byte) OpCodes.OP_MULTIPLY:
                 {
-                    PushStack((dynamic)PopStack() * (dynamic)PopStack());
+                    Push((dynamic)Pop() * (dynamic)Pop());
                     break;
                 }
                 case (byte) OpCodes.OP_TRUE:
                 {
-                    PushStack(true);
+                    Push(true);
                     break;
                 }
                 case (byte) OpCodes.OP_FALSE:
                 {
-                    PushStack(false);
+                    Push(false);
                     break;
                 }
                 case (byte) OpCodes.OP_NULL:
                 {
-                    PushStack(null);
+                    Push(null);
                     break;
                 }
                 case (byte) OpCodes.OP_NOT:
                 {
-                    object? obj = PopStack();
+                    object? obj = Pop();
                     if (obj == null)
                     {
-                        PushStack(true);
+                        Push(true);
                     }
                     else if (obj is bool b)
                     {
-                        PushStack(!b);
+                        Push(!b);
                     }
                     else if (obj.IsNumber())
                     {
-                        PushStack((dynamic) obj == 0);
+                        Push((dynamic) obj == 0);
                     }
 
                     break;
                 }
                 case (byte) OpCodes.OP_EQUAL:
                 {
-                    object? b = PopStack();
-                    object? a = PopStack();
-                    PushStack(a == b);
+                    object? b = Pop();
+                    object? a = Pop();
+
+                    bool aNull = a == null;
+                    bool bNull = b == null;
+
+                    if (aNull && bNull)
+                    {
+                        Push(true);
+                        break;
+                    }
+
+                    if (aNull || bNull)
+                    {
+                        Push(false);
+                        break;
+                    }
+
+                    bool eq = a!.Equals(b);
+                    Push(eq);
                     break;
                 }
                 case (byte) OpCodes.OP_NOT_EQUAL:
                 {
-                    object? b = PopStack();
-                    object? a = PopStack();
-                    PushStack(a != b);
+                    object? b = Pop();
+                    object? a = Pop();
+                    Push(a != b);
                     break;
                 }
                 case (byte) OpCodes.OP_GREATER:
                 {
-                    object? b = PopStack();
-                    object? a = PopStack();
+                    object? b = Pop();
+                    object? a = Pop();
 
                     if (a == null || b == null)
                     {
@@ -205,15 +253,15 @@ public class SxVm
                     }
                     else if (a.IsNumber() && b.IsNumber())
                     {
-                        PushStack((dynamic)a > (dynamic)b);   
+                        Push((dynamic)a > (dynamic)b);   
                     }
                     
                     break;
                 }
                 case (byte) OpCodes.OP_LESS:
                 {
-                    object? b = PopStack();
-                    object? a = PopStack();
+                    object? b = Pop();
+                    object? a = Pop();
 
                     if (a == null || b == null)
                     {
@@ -221,15 +269,15 @@ public class SxVm
                     }
                     else if (a.IsNumber() && b.IsNumber())
                     {
-                        PushStack((dynamic)a < (dynamic)b);   
+                        Push((dynamic)a < (dynamic)b);   
                     }
                     
                     break;
                 }
                 case (byte) OpCodes.OP_EQUAL_GREATER:
                 {
-                    object? b = PopStack();
-                    object? a = PopStack();
+                    object? b = Pop();
+                    object? a = Pop();
 
                     if (a == null || b == null)
                     {
@@ -237,15 +285,15 @@ public class SxVm
                     }
                     else if (a.IsNumber() && b.IsNumber())
                     {
-                        PushStack((dynamic)a >= (dynamic)b);   
+                        Push((dynamic)a >= (dynamic)b);   
                     }
                     
                     break;
                 }
                 case (byte) OpCodes.OP_EQUAL_LESS:
                 {
-                    object? b = PopStack();
-                    object? a = PopStack();
+                    object? b = Pop();
+                    object? a = Pop();
 
                     if (a == null || b == null)
                     {
@@ -253,29 +301,101 @@ public class SxVm
                     }
                     else if (a.IsNumber() && b.IsNumber())
                     {
-                        PushStack((dynamic)a <= (dynamic)b);   
+                        Push((dynamic)a <= (dynamic)b);   
                     }
                     
                     break;
                 }
                 case (byte) OpCodes.OP_CONSTANT_INT_ZERO:
                 {
-                    PushStack(0);
+                    Push(0);
                     break;
                 }
                 case (byte) OpCodes.OP_CONSTANT_INT_MINUS_ONE:
                 {
-                    PushStack(-1);
+                    Push(-1);
                     break;
                 }
                 case (byte) OpCodes.OP_CONSTANT_INT_ONE:
                 {
-                    PushStack(1);
+                    Push(1);
                     break;
                 }
                 case (byte) OpCodes.OP_CONSTANT_INT_TWO:
                 {
-                    PushStack(2);
+                    Push(2);
+                    break;
+                }
+                case (byte) OpCodes.OP_PRINT:
+                {
+                    PrintLn(Pop());
+                    break;
+                }
+                case (byte) OpCodes.OP_POP:
+                {
+                    Pop();
+                    break;
+                }
+                case (byte) OpCodes.OP_DEFINE_GLOBAL_8:
+                {
+                    object? val = Pop();
+                    object? keyIndexVal = Pop();
+                    byte b = ReadByte();
+
+                    if (keyIndexVal is string key)
+                    {
+                        if (Globals.ContainsKey(key))
+                        {
+                            Globals[key] = val;
+                        }
+                        else
+                        {
+                            Globals.Add(key, val);
+                        }
+                    }
+                    
+                    break;
+                }
+                case (byte) OpCodes.OP_GET_GLOBAL_8:
+                {
+                    object? keyIndexVal = Pop();
+                    object? val = null;
+                    byte b = ReadByte();
+                    
+                    if (keyIndexVal is string key)
+                    {
+                        if (Globals.ContainsKey(key))
+                        {
+                            val = Globals[key];
+                        }
+                        else
+                        {
+                            // nedefinovaná proměnná
+                            Globals.Add(key, val);
+                        }
+                    }
+
+                    Push(val);
+                    break;
+                }
+                case (byte) OpCodes.OP_SET_GLOBAL_8:
+                {
+                    object? val = Pop();
+                    object? keyIndexVal = Peek();
+                    byte b = ReadByte();
+
+                    if (keyIndexVal is string key)
+                    {
+                        if (Globals.ContainsKey(key))
+                        {
+                            Globals[key] = val;
+                        }
+                        else
+                        {
+                            Globals.Add(key, val);
+                        }
+                    }
+                    
                     break;
                 }
                 default:
@@ -308,7 +428,7 @@ public class SxVm
         StdOutput.Append(val);
     }
 
-    void PrintLn(object val)
+    void PrintLn(object? val)
     {
         StdOutput.Append($"{val}\n");
     }
@@ -333,12 +453,12 @@ public class SxVm
         return sb.ToString();
     }
 
-    void PushStack(object? value)
+    void Push(object? value)
     {
         Stack.Push(value);
     }
 
-    object? PopStack()
+    object? Pop()
     {
         return Stack.Pop();
     }

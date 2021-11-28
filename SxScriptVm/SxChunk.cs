@@ -26,6 +26,17 @@ public enum OpCodes : byte
     OP_CONSTANT_INT_ONE = 20,
     OP_CONSTANT_INT_TWO = 21,
     OP_CONSTANT_INT_MINUS_ONE = 22,
+    OP_PRINT = 23,
+    OP_POP = 24,
+    OP_DEFINE_GLOBAL_8 = 25,
+    OP_DEFINE_GLOBAL_16 = 26,
+    OP_DEFINE_GLOBAL_32 = 27,
+    OP_GET_GLOBAL_8 = 28,
+    OP_GET_GLOBAL_16 = 29,
+    OP_GET_GLOBAL_32 = 30,
+    OP_SET_GLOBAL_8 = 31,
+    OP_SET_GLOBAL_16 = 32,
+    OP_SET_GLOBAL_32 = 33
 }
 
 public class SxChunk
@@ -34,6 +45,8 @@ public class SxChunk
     public List<object> Constants { get; set; } = new List<object>();
     public List<SxLine> Lines { get; set; } = new List<SxLine>();
     private int CurrentLineCounter = 0;
+    public List<SxError> CompileErrors { get; set; }
+    public bool HasCompileErrors { get; set; }
 
     public SxChunk()
     {
@@ -58,10 +71,10 @@ public class SxChunk
                 }
                 case (byte) SxScriptVm.OpCodes.OP_CONSTANT_8:
                 {
-                    sb.Append($"OP_CONSTANT_8\n");
+                    sb.Append($"OP_CONSTANT_8        | ");
                     object constant = Constants[OpCodes[i + 1]];
                     i++;
-                    sb.Append($"{i.ToString("0000")} {constant}");
+                    sb.Append($"{constant}");
                     break;
                 }
                 case (byte) SxScriptVm.OpCodes.OP_CONSTANT_16:
@@ -189,9 +202,43 @@ public class SxChunk
                     sb.Append("OP_CONSTANT_INT_MINUS_ONE");
                     break;
                 }
+                case (byte)SxScriptVm.OpCodes.OP_PRINT:
+                {
+                    sb.Append("OP_PRINT");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_POP:
+                {
+                    sb.Append("OP_POP");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_DEFINE_GLOBAL_8:
+                {
+                    sb.Append("OP_DEFINE_GLOBAL_8   | ");
+                    object constant = Constants[OpCodes[i + 1]];
+                    i++;
+                    sb.Append($"{constant}");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_GET_GLOBAL_8:
+                {
+                    sb.Append("OP_GET_GLOBAL_8      | ");
+                    object constant = Constants[OpCodes[i + 1]];
+                    i++;
+                    sb.Append($"{constant}");
+                    break;
+                }
                 default:
                 {
                     sb.Append($"Neznámá instrukce - {OpCodes[i]}");
+                    break;
+                }
+                case (byte)SxScriptVm.OpCodes.OP_SET_GLOBAL_8:
+                {
+                    sb.Append("OP_SET_GLOBAL_8      | ");
+                    object constant = Constants[OpCodes[i + 1]];
+                    i++;
+                    sb.Append($"{constant}");
                     break;
                 }
             }
@@ -218,6 +265,11 @@ public class SxChunk
     
     public int PushOpCode(short codes)
     {
+        if (codes <= byte.MaxValue)
+        {
+            return PushOpCode((byte) codes);
+        }
+        
         CurrentLineCounter += 2;
         OpCodes.Add(codes.GetByte(0));
         OpCodes.Add(codes.GetByte(1));
@@ -226,6 +278,18 @@ public class SxChunk
     
     public int PushOpCode(int codes)
     {
+        switch (codes)
+        {
+            case <= byte.MaxValue:
+            {
+                return PushOpCode((byte) codes);
+            }
+            case <= short.MaxValue:
+            {
+                return PushOpCode((short) codes);
+            }
+        }
+
         CurrentLineCounter += 4;
         OpCodes.Add(codes.GetByte(0));
         OpCodes.Add(codes.GetByte(1));
@@ -256,6 +320,11 @@ public class SxChunk
             currentIndex += Lines[step].Offset;
             step++;
         }
+    }
+
+    public object GetConstant(int index)
+    {
+        return Constants[index];
     }
 
     public int PushConstant(object constant)

@@ -36,6 +36,11 @@ public static class SxExtensions
     {
         return string.IsNullOrWhiteSpace(str);
     }
+
+    public static bool IsString(this object? obj)
+    {
+        return obj is string;
+    }
     
     public static bool IsNumber(this object? obj)
     {

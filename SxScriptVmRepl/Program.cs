@@ -55,11 +55,20 @@ public class Program
         string input = sb.ToString();
         SxVm vm = new SxVm();
         SxVmInterpretResult result = vm.Interpret(input);
+
+        if (result.Result == SxInterpretResults.CompileError)
+        {
+            Console.WriteLine("program se nepodařilo zkompilovat:");
+            Console.WriteLine(result.StdErr);   
+        }
+        else if (result.Result == SxInterpretResults.Ok)
+        {
+            Console.WriteLine("bytekód:");
+            Console.WriteLine(result.Bytecode);
+            Console.WriteLine("stdout:");
+            Console.WriteLine(result.StdOut);
+        }
         
-        Console.WriteLine("bytekód:");
-        Console.WriteLine(result.Bytecode);
-        Console.WriteLine("stdout:");
-        Console.WriteLine(result.StdOut);
         Console.ReadKey();
     }
 }

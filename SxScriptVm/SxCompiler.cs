@@ -36,11 +36,13 @@ public class SxCompiler
 {
     private List<SxToken> Tokens { get; set; }
     private int Index { get; set; }
-    private List<string> Errors { get; set; }
+    private List<SxError> Errors { get; set; }
     private bool Working { get; set; }
     private SxChunk Chunk { get; set; }
-
+    private bool PanicMode { get; set; }
     private SxParseRule[] Rules { get; set; }
+    private bool CanAssign { get; set; }
+    private bool HasError { get; set; }
 
     public SxCompiler()
     {
@@ -64,11 +66,14 @@ public class SxCompiler
         Rules[(int) SxTokenTypes.False] = new SxParseRule(Literal, null, SxPrecedenceTypes.None);
         Rules[(int) SxTokenTypes.Nill] = new SxParseRule(Literal, null, SxPrecedenceTypes.None);
         Rules[(int) SxTokenTypes.ExclamationEqual] = new SxParseRule(null, Binary, SxPrecedenceTypes.Equality);
+        Rules[(int) SxTokenTypes.Equal] = new SxParseRule(null, null, SxPrecedenceTypes.None);
         Rules[(int) SxTokenTypes.EqualEqual] = new SxParseRule(null, Binary, SxPrecedenceTypes.Equality);
         Rules[(int) SxTokenTypes.Greater] = new SxParseRule(null, Binary, SxPrecedenceTypes.Comparison);
         Rules[(int) SxTokenTypes.GreaterEqual] = new SxParseRule(null, Binary, SxPrecedenceTypes.Comparison);
         Rules[(int) SxTokenTypes.Less] = new SxParseRule(null, Binary, SxPrecedenceTypes.Comparison);
         Rules[(int) SxTokenTypes.LessEqual] = new SxParseRule(null, Binary, SxPrecedenceTypes.Comparison);
+        Rules[(int) SxTokenTypes.String] = new SxParseRule(StringFn, null, SxPrecedenceTypes.None);
+        Rules[(int) SxTokenTypes.Identifier] = new SxParseRule(Variable, null, SxPrecedenceTypes.None);
     }
 
     public SxChunk Compile(string code)
@@ -85,13 +90,206 @@ public class SxCompiler
         Tokens = tokens;
         Index = 0;
         Working = true;
-        Errors = new List<string>();
-        
-        Expression();
-        Consume(SxTokenTypes.Eof, "Očekáván konec skriptu");
+        Errors = new List<SxError>();
+        PanicMode = false;
+        CanAssign = false;
+        HasError = false;
+
+        while (!Match(SxTokenTypes.Eof) && Working)
+        {
+            Entry();
+        }
+
         Emit(OpCodes.OP_RETURN);
 
+        if (HasError)
+        {
+            Chunk.CompileErrors = Errors;
+            Chunk.HasCompileErrors = true;
+        }
+
         return Chunk;
+    }
+
+    void Entry()
+    {
+        Declaration();
+
+        if (PanicMode)
+        {
+            Synchronize();
+        }
+    }
+
+    void Declaration()
+    {
+        if (Match(SxTokenTypes.KeywordVar))
+        {
+            VarDeclaration();
+        }
+        else
+        {
+            Statement();   
+        }
+    }
+
+    void VarDeclaration()
+    {
+        int varIndex = ParseVariable("Očekáván název proměnné");
+        if (Match(SxTokenTypes.Equal))
+        {
+            Expression();
+        }
+        else
+        {
+            Emit(OpCodes.OP_NULL);
+        }
+
+        ConsumeIfMatch(SxTokenTypes.Semicolon, "Očekáván ; na konci deklarace proměnné");
+        DefineVariable(varIndex);
+    }
+
+    void Variable()
+    {
+        NamedVariable(PreviousToken);
+    }
+
+    void NamedVariable(SxToken token)
+    {
+        int varIndex = IdentifierConstant(token);
+
+        if (Match(SxTokenTypes.Equal))
+        {
+            Expression();
+            
+            if (CanAssign)
+            {
+                Emit(OpCodes.OP_SET_GLOBAL_8);   
+            }
+            else
+            {
+                Error("Neplatný cíl pro přiřazení");
+            }
+        }
+        else
+        {
+            Emit(OpCodes.OP_GET_GLOBAL_8);
+        }
+
+        if (varIndex <= byte.MaxValue)
+        {
+            Emit(varIndex);
+        }
+    }
+
+    void DefineVariable(int index)
+    {
+        if (index <= byte.MaxValue)
+        {
+            Emit(OpCodes.OP_DEFINE_GLOBAL_8);
+            Emit(index);
+        }
+    }
+    
+    int ParseVariable(string msg)
+    {
+        Consume(SxTokenTypes.Identifier, msg);
+        return IdentifierConstant(PreviousToken);
+    }
+
+    int IdentifierConstant(SxToken token)
+    {
+        return CurrentChunk.PushConstant(token.Lexeme);
+    }
+
+    void Statement()
+    {
+        if (Match(SxTokenTypes.KeywordPrint))
+        {
+            PrintStatement();
+        }
+        else
+        {
+            ExpressionStatement();
+        }
+    }
+
+    void ExpressionStatement()
+    {
+        Expression();
+        ConsumeIfMatch(SxTokenTypes.Semicolon);
+        Emit(OpCodes.OP_POP);
+    }
+    
+    void PrintStatement()
+    {
+        Expression();
+        ConsumeIfMatch(SxTokenTypes.Semicolon);
+        Emit(OpCodes.OP_PRINT);
+    }
+
+    bool ConsumeIfMatch(SxTokenTypes token, string msg = "")
+    {
+        if (!Check(token))
+        {
+            return false;
+        }
+
+        Advance();
+        return true;
+    }
+
+    void Synchronize()
+    {
+        PanicMode = false;
+        
+        while (CurrentToken.Type != SxTokenTypes.Eof)
+        {
+            if (PreviousToken.Type == SxTokenTypes.Semicolon)
+            {
+                return;
+            }
+
+            switch (CurrentToken.Type)
+            {
+                case SxTokenTypes.KeywordClass:
+                case SxTokenTypes.KeywordFunction:
+                case SxTokenTypes.KeywordVar:
+                case SxTokenTypes.KeywordFor:
+                case SxTokenTypes.KeywordIf:
+                case SxTokenTypes.KeywordWhile:
+                case SxTokenTypes.KeywordPrint:
+                case SxTokenTypes.KeywordReturn:
+                    return;
+
+                default:
+                    break;
+            }
+
+            Advance();
+        }
+    }
+
+    bool Match(SxTokenTypes type)
+    {
+        if (!Check(type))
+        {
+            return false;
+        }
+
+        Advance();
+        return true;
+    }
+
+    bool Check(SxTokenTypes type)
+    {
+        return CurrentToken.Type == type;
+    }
+
+    void StringFn()
+    {
+        object val = PreviousToken.Literal;
+        Constant(val);
     }
 
     void Literal()
@@ -248,6 +446,9 @@ public class SxCompiler
         Advance();
         SxParseRule rule = GetRule(PreviousToken.Type);
         rule?.Prefix?.Method.Invoke(this, null);
+
+        bool canAssign = precedenceType <= SxPrecedenceTypes.Assignment;
+        CanAssign = canAssign;
         
         while (precedenceType <= GetRule(CurrentToken.Type).Precedence)
         {
@@ -255,6 +456,8 @@ public class SxCompiler
             SxParseRule infixRule = GetRule(PreviousToken.Type);
             infixRule?.Infix?.Method.Invoke(this, null);
         }
+
+        CanAssign = false;
     }
 
     int AddConstant(object value)
@@ -345,7 +548,8 @@ public class SxCompiler
 
     void Error(string msg, bool halt = true)
     {
-        Errors.Add(msg);
+        HasError = true;
+        Errors.Add(new SxError($"{msg}, token \"{PreviousToken.Lexeme}\"", PreviousToken.Line));
         if (halt)
         {
             Working = false;
